@@ -55,7 +55,3 @@ class TestInitCommand(BaseClass):
             'follower_dir': os.path.join(ET_FOLLOWER_ROOT_DIR, project_name),
             'name': project_name
         }, 'Unexpected project configuration on et init')
-
-    @unittest.skip
-    def test_cannot_run_init_from_the_follower_dir(self):
-        pass

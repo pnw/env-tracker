@@ -19,8 +19,6 @@ def init(path: str, project_name: str = ''):
         log.debug('TODO: Give better error when we arent in a repo')
         raise
 
-    # TODO: prevent creating followers from the follower dir??
-
     if (not project_name):
         project_name = os.path.split(repo.working_dir)[-1]
     follower_dir = get_follower_path(project_name)
