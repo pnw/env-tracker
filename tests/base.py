@@ -4,7 +4,7 @@ import unittest
 
 from git import Repo
 
-TMP_DIR = '/tmp/et_test'
+TMP_DIR = str('/private/tmp/et_test')
 
 os.environ.update({
     'ET_FOLLOWER_ROOT_DIR': os.path.join(TMP_DIR, '.et')

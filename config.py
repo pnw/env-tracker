@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 from git import Repo, InvalidGitRepositoryError
 
@@ -10,55 +11,30 @@ ET_FOLLOWER_ROOT_DIR = os.environ.get('ET_FOLLOWER_ROOT_DIR', os.path.join(os.pa
 
 ET_CONFIG_LOCATION = os.environ.get('ET_CONFIG_LOCATION', os.path.join(ET_FOLLOWER_ROOT_DIR, '.etconfig'))
 
+ET_ROOT_PATH = Path(ET_FOLLOWER_ROOT_DIR)
+ET_CONFIG_PATH = Path(ET_CONFIG_LOCATION)
+
 
 def get_follower_path(project_name):
     return os.path.join(ET_FOLLOWER_ROOT_DIR, project_name)
 
 
-class CurrentRepo(object):
-    def __init__(self):
-        try:
-            self.repo = Repo(search_parent_directories=True)
-        except InvalidGitRepositoryError as e:
-            log.debug('TODO: Give better error when we arent in a repo')
-            raise
+class Project(object):
+    def __init__(self, source_dir: Path, follower_dir: Path, name: str):
+        self.source_dir = Path(source_dir).resolve()
+        self.follower_dir = Path(follower_dir).resolve()
+        self.name = name
 
-    @property
-    def name(self) -> str:
-        return os.path.split(self.repo.working_dir)[-1]
-
-    @property
-    def is_follower(self) -> bool:
-        return os.getcwd().startswith(ET_FOLLOWER_ROOT_DIR)
-
-    @property
-    def is_source(self) -> bool:
-        return not self.is_follower
-
-    @property
-    def source_path(self) -> str:
-        if (self.is_source):
-            return self.repo.working_dir
-        else:
-            # TODO: load the settings
-            return get_follower_path(self.name)
-
-    @property
-    def follower_path(self) -> str:
-        if (self.is_source):
-            return get_follower_path(self.name)
-        else:
-            return self.repo.working_dir
-
-    def source_repo(self) -> SourceRepo:
-        return SourceRepo(self.source_path)
-
-    def follower_repo(self) -> FollowerRepo:
-        return FollowerRepo(self.follower_path)
+    def to_dict(self):
+        return {
+            'source_dir': str(self.source_dir),
+            'follower_dir': str(self.follower_dir),
+            'name': self.name
+        }
 
 
 class ETConfig(object):
-    def __init__(self, config: object = None):
+    def __init__(self, config: dict = None):
         """
 
         :param config: The parsed json contents of the et config file
@@ -75,31 +51,42 @@ class ETConfig(object):
             }, f, indent=4)
         return self
 
-    def register_project(self, source_dir: str, follower_dir: str, name: str):
+    def register_project(self, source_dir: Path, follower_dir: Path, name: str = ''):
+        if not name:
+            name = source_dir.name
+
         if (self.find_project_by_name(name)):
             raise Exception('Project with name {} exists already'.format(name))
 
-        if (self.find_project_by_follower_path(follower_dir)):
+        if (self.find_project_by_follower_dir(follower_dir)):
             # err... this should theoretically never happen right?
             raise Exception('{} is already tracking another project'.format(follower_dir))
 
-        if (self.find_project_by_source_path(source_dir)):
+        if (self.find_project_by_source_dir(source_dir)):
             raise Exception('This repository is already being tracked')
 
-        self._projects.append(dict(
-            source_dir=source_dir,
-            follower_dir=follower_dir,
-            name=name
-        ))
+        project = Project(source_dir=source_dir, follower_dir=follower_dir, name=name)
+
+        self._projects.append(project.to_dict())
 
     def find_project_by_name(self, name: str):
-        return find(self._projects, lambda proj: proj['name'] == name)
+        find(self._projects, lambda proj: proj['name'] == name)
+        for project_config in self._projects:
+            if (project_config['name'] == name):
+                return Project(**project_config)
+        return None
 
-    def find_project_by_follower_path(self, follower_dir: str):
-        return find(self._projects, lambda proj: proj['follower_dir'] == follower_dir)
+    def find_project_by_follower_dir(self, follower_path: Path) -> Project:
+        for project_config in self._projects:
+            if Path(project_config['follower_dir']) == follower_path:
+                return Project(**project_config)
+        return None
 
-    def find_project_by_source_path(self, source_dir: str):
-        return find(self._projects, lambda proj: proj['source_dir'] == source_dir)
+    def find_project_by_source_dir(self, source_path: Path) -> Project:
+        for project_config in self._projects:
+            if Path(project_config['source_dir']) == source_path:
+                return Project(**project_config)
+        return None
 
 
 def get_context():
@@ -118,24 +105,37 @@ def load_et_config() -> ETConfig:
         return ETConfig()
 
 
-def load_project():
-    print('loading project')
-    current_repo = CurrentRepo()
+def is_child_path(parent_path: Path, child_path: Path) -> bool:
+    try:
+        child_path.relative_to(parent_path)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def is_path_in_follower_dir(path: Path) -> bool:
+    return is_child_path(ET_ROOT_PATH, path)
+
+
+def intuit_project_from_path(path: Path) -> Project:
+    try:
+        repo = Repo(path, search_parent_directories=True)
+    except InvalidGitRepositoryError:
+        raise
+
+    repo_path = Path(repo.working_dir).resolve()
+
     config = load_et_config()
 
-    return Project(config)
+    if is_path_in_follower_dir(repo_path):
+        project = config.find_project_by_follower_dir(repo_path)
+    else:
+        project = config.find_project_by_source_dir(repo_path)
 
-
-class Project(object):
-    def __init__(self, settings):
-        """
-        :param settings:
-        :type settings: ProjectSettings
-        """
-        print('loading project')
-        self.settings = settings
-        self.source = SourceRepo(settings.source_path)
-        self.follower = FollowerRepo(settings.follower_path)
+    if not project:
+        raise Exception('Unknown project')
+    return project
 
 
 class File(object):
@@ -144,15 +144,3 @@ class File(object):
 
         abspath = filepath if os.path.isabs(filepath) else os.path.abspath(filepath)
         self.path = os.path.relpath(abspath, project.source.repo.working_directory)
-
-
-class FollowerRepo(object):
-    def __init__(self, path: str):
-        self.path = path
-        self.repo = Repo(path)
-
-
-class SourceRepo(object):
-    def __init__(self, path: str):
-        self.path = path
-        self.repo = Repo(path)
