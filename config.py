@@ -89,14 +89,6 @@ class ETConfig(object):
         return None
 
 
-def get_context():
-    try:
-        repo = Repo(search_parent_directories=True)
-    except InvalidGitRepositoryError as e:
-        log.debug('TODO: Give better error when we arent in a repo')
-        raise
-
-
 def load_et_config() -> ETConfig:
     try:
         with open(ET_CONFIG_LOCATION, 'r') as f:
@@ -136,11 +128,3 @@ def intuit_project_from_path(path: Path) -> Project:
     if not project:
         raise Exception('Unknown project')
     return project
-
-
-class File(object):
-    def __init__(self, project, filepath):
-        self.project = project
-
-        abspath = filepath if os.path.isabs(filepath) else os.path.abspath(filepath)
-        self.path = os.path.relpath(abspath, project.source.repo.working_directory)

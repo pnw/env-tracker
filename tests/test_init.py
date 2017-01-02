@@ -1,6 +1,5 @@
 import json
 import os
-import unittest
 from git import InvalidGitRepositoryError
 from tests.base import BaseClass, rmdir
 from config import ET_FOLLOWER_ROOT_DIR, ET_CONFIG_LOCATION
