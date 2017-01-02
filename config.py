@@ -1,20 +1,19 @@
 import json
-
-from logger import log
-from git import Repo, InvalidGitRepositoryError
 import os
 
-ET_HOME_DIR = os.environ.get('ET_HOME_DIR', os.path.expanduser('~'))
+from git import Repo, InvalidGitRepositoryError
 
-ET_FOLLOWER_ROOT_DIR = os.environ.get('ET_FOLLOWER_DIR', os.path.join(ET_HOME_DIR, '.et'))
+from logger import log
+from utils import find
+
+ET_FOLLOWER_ROOT_DIR = os.environ.get('ET_FOLLOWER_ROOT_DIR', os.path.join(os.path.expanduser('~'), '.et'))
 
 ET_CONFIG_LOCATION = os.environ.get('ET_CONFIG_LOCATION', os.path.join(ET_FOLLOWER_ROOT_DIR, '.etconfig'))
+
 
 def get_follower_path(project_name):
     return os.path.join(ET_FOLLOWER_ROOT_DIR, project_name)
 
-def find(arr, fn):
-    return next((i for i in arr if fn(i)), None)
 
 class CurrentRepo(object):
     def __init__(self):
@@ -25,19 +24,19 @@ class CurrentRepo(object):
             raise
 
     @property
-    def name(self):
+    def name(self) -> str:
         return os.path.split(self.repo.working_dir)[-1]
 
     @property
-    def is_follower(self):
+    def is_follower(self) -> bool:
         return os.getcwd().startswith(ET_FOLLOWER_ROOT_DIR)
 
     @property
-    def is_source(self):
+    def is_source(self) -> bool:
         return not self.is_follower
 
     @property
-    def source_path(self):
+    def source_path(self) -> str:
         if (self.is_source):
             return self.repo.working_dir
         else:
@@ -45,16 +44,16 @@ class CurrentRepo(object):
             return get_follower_path(self.name)
 
     @property
-    def follower_path(self):
+    def follower_path(self) -> str:
         if (self.is_source):
             return get_follower_path(self.name)
         else:
             return self.repo.working_dir
 
-    def source_repo(self):
+    def source_repo(self) -> SourceRepo:
         return SourceRepo(self.source_path)
 
-    def follower_repo(self):
+    def follower_repo(self) -> FollowerRepo:
         return FollowerRepo(self.follower_path)
 
 

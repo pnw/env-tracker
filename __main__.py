@@ -1,3 +1,4 @@
+import os
 
 if __name__ == '__main__':
     # import argparse
@@ -11,13 +12,14 @@ if __name__ == '__main__':
     except Exception as e:
         exit('Must specify a command')
     else:
+        positional_args = sys.argv[2:]
         try:
             if (command == 'init'):
                 from commands.init import init
-                init()
+                init(*positional_args)
             elif (command == 'track'):
                 from commands.track import track
-                track(*sys.argv[2:])
+                track(*positional_args)
             else:
                 print('Unknown command: {0}'.format(command))
         except Exception as e:

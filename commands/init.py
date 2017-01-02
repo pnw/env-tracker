@@ -4,18 +4,15 @@ from config import get_follower_path, load_et_config
 import os
 
 
-def init(path: str = '', project_name: str = ''):
+def init(path: str, project_name: str = ''):
     """
-    usage: `et init [path] [project_name]`
+    usage: `et init path [project_name]`
     TODO: allow the user to specify the path to the project instead of relying on the current directory
 
     Initialize a project
     1. Detects the current repo
     2. Grab the name of the current repo and create a parallel git repo in the ER_DIR
     """
-    if not path:
-        path = os.getcwd()
-
     try:
         repo = Repo(path=path, search_parent_directories=True)
     except InvalidGitRepositoryError as e:
