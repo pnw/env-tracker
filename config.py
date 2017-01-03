@@ -32,6 +32,19 @@ class Project(object):
             'name': self.name
         }
 
+    def path_is_in_source_dir(self, path: Path) -> bool:
+        return is_child_path(self.source_dir, path)
+
+    def path_is_in_follower_dir(self, path: Path) -> bool:
+        return is_child_path(self.follower_dir, path)
+
+
+class File(object):
+    def __init__(self, path: Path, project: Project):
+        self.path = path
+        self.project = project
+
+
 
 class ETConfig(object):
     def __init__(self, config: dict = None):
@@ -106,7 +119,7 @@ def is_child_path(parent_path: Path, child_path: Path) -> bool:
         return True
 
 
-def is_path_in_follower_dir(path: Path) -> bool:
+def is_path_in_follower_root_dir(path: Path) -> bool:
     return is_child_path(ET_ROOT_PATH, path)
 
 
@@ -120,7 +133,7 @@ def intuit_project_from_path(path: Path) -> Project:
 
     config = load_et_config()
 
-    if is_path_in_follower_dir(repo_path):
+    if is_path_in_follower_root_dir(repo_path):
         project = config.find_project_by_follower_dir(repo_path)
     else:
         project = config.find_project_by_source_dir(repo_path)
