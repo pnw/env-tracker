@@ -1,9 +1,9 @@
 from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
-from config import ET_HOME, TO_FOLLOWER_SYMLINK_NAME, TO_SOURCE_SYMLINK_NAME
+from config import ET_HOME, FOLLOWER_SYMLINK_NAME, SOURCE_SYMLINK_NAME
 
 
-def init(path: str, project_name: str = ''):
+def init(path: [str,Path], project_name: str = ''):
     """
     usage: `et init path [project_name]`
     TODO: allow the user to specify the path to the project instead of relying on the current directory
@@ -16,7 +16,7 @@ def init(path: str, project_name: str = ''):
     try:
         repo = Repo(path=path)
     except InvalidGitRepositoryError:
-        raise Exception('Provided path is not a git repository')
+        raise
 
     source_path = Path(repo.working_dir)
 
@@ -24,8 +24,8 @@ def init(path: str, project_name: str = ''):
         project_name = source_path.name
 
     follower_path = Path(ET_HOME) / project_name
-    to_follower_symlink = source_path / TO_FOLLOWER_SYMLINK_NAME
-    to_source_symlink = follower_path / TO_SOURCE_SYMLINK_NAME
+    to_follower_symlink = source_path / FOLLOWER_SYMLINK_NAME
+    to_source_symlink = follower_path / SOURCE_SYMLINK_NAME
 
     if follower_path.exists():
         # TODO: make this more fault-tolerant by inpecting the follower path
@@ -36,7 +36,7 @@ def init(path: str, project_name: str = ''):
         # TODO: make this more fault tolerant by inspecting the symlink path
         raise Exception('This repo is already linked to a follower directory')
 
-    follower_path.mkdir()
+    follower_path.mkdir(parents=True)
     Repo.init(follower_path)
 
     to_follower_symlink.symlink_to(follower_path)
