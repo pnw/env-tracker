@@ -1,10 +1,10 @@
 from pathlib import Path
+from git import Repo, InvalidGitRepositoryError
 
-from logger import log
-import os
-from config import intuit_project_from_path
+from config import TO_FOLLOWER_SYMLINK_NAME, TO_SOURCE_SYMLINK_NAME
 
-def track (filepath, *opts):
+
+def track(filepath, *opts):
     """
     1. move the file to the et directory
     2. track the file in the et repo
@@ -14,7 +14,7 @@ def track (filepath, *opts):
     :param args:
     :return:
     """
-    file_path = Path(filepath).resolve()
+    file_path = Path(filepath)
 
     if not file_path.exists():
         raise Exception('Path does not exist')
@@ -25,17 +25,30 @@ def track (filepath, *opts):
     if file_path.is_symlink():
         raise Exception('File is already symlinked')
 
-    # TODO: raise exception if the file is being tracked by the source repo - otherwise moving it to the parallel dir doesn't make sense
+    try:
+        repo = Repo(file_path, search_parent_directories=True)
+    except InvalidGitRepositoryError:
+        raise Exception('Not in a project')
 
-    project = intuit_project_from_path(file_path)
+    source_path = Path(repo.working_dir)
+    follower_path = (source_path / TO_FOLLOWER_SYMLINK_NAME).resolve()
+
+    if (source_path / TO_SOURCE_SYMLINK_NAME).exists():
+        raise Exception('You may not track files from the follower directory')
+
+    if not (source_path / TO_FOLLOWER_SYMLINK_NAME).exists():
+        raise Exception('Cannot find reference to a follower directory')
+
+    if (follower_path / TO_SOURCE_SYMLINK_NAME).resolve() != source_path:
+        # TODO: add a "doctor" command to fix symlinks between repos, `et doctor source_dir follower_dir`
+        raise Exception('Project misconfigured - the follower directory is tracking a different project')
 
     try:
-        relative_path = file_path.relative_to(project.source_dir)
+        relative_path = file_path.resolve().relative_to(source_path)
     except ValueError:
-        # TODO: make this error clearer
-        raise Exception('May not track files from the follower directory.')
+        raise Exception('May only track files in the source directory')
 
-    destination_path = project.follower_dir / relative_path
+    destination_path = follower_path / relative_path
 
     if destination_path.exists():
         raise Exception('Something else already exists at: {}'.format(destination_path))

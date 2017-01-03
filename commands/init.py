@@ -12,6 +12,7 @@ def init(path: str, project_name: str = ''):
     1. Detects the current repo
     2. Grab the name of the current repo and create a parallel git repo in the ER_DIR
     """
+    ## TODO: if no path is provided, then we can crawl up the tree to the nearest git repo to
     try:
         repo = Repo(path=path)
     except InvalidGitRepositoryError:
