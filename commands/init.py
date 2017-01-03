@@ -1,7 +1,9 @@
+import sys
 from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 from logger import log
-from config import ET_FOLLOWER_ROOT_DIR, ET_SYMLINK_NAME
+from config import ET_HOME, TO_FOLLOWER_SYMLINK_NAME, TO_SOURCE_SYMLINK_NAME
+from utils import critical_error
 
 
 def init(path: str, project_name: str = ''):
@@ -14,18 +16,18 @@ def init(path: str, project_name: str = ''):
     2. Grab the name of the current repo and create a parallel git repo in the ER_DIR
     """
     try:
-        repo = Repo(path=path, search_parent_directories=True)
+        repo = Repo(path=path)
     except InvalidGitRepositoryError as e:
-        log.debug('TODO: Give better error when we arent in a repo')
-        raise
+        raise Exception('Provided path is not a git repository')
 
     source_path = Path(repo.working_dir)
 
     if not project_name:
         project_name = source_path.name
 
-    follower_path = Path(ET_FOLLOWER_ROOT_DIR) / project_name
-    sympath = source_path / ET_SYMLINK_NAME
+    follower_path = Path(ET_HOME) / project_name
+    to_follower_symlink = source_path / TO_FOLLOWER_SYMLINK_NAME
+    to_source_symlink = follower_path / TO_SOURCE_SYMLINK_NAME
 
     # ETAFTP, I know, but this prevents me from having to rollback in the event of errors
     if follower_path.exists():
@@ -33,12 +35,13 @@ def init(path: str, project_name: str = ''):
         # if the follower path is already linked to the current project, then we don't need to fail
         raise Exception('Follower directory already exists')
 
-    if sympath.exists():
+    if to_follower_symlink.exists():
         # TODO: make this more fault tolerant by inspecting the symlink path
         raise Exception('This repo is already linked to a follower directory')
 
     follower_path.mkdir()
-    sympath.symlink_to(follower_path)
+    to_follower_symlink.symlink_to(follower_path)
+    to_source_symlink.symlink_to(source_path)
 
     Repo.init(follower_path)
 

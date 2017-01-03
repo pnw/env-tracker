@@ -7,10 +7,10 @@ from git import Repo
 TMP_DIR = str('/private/tmp/et_test')
 
 os.environ.update({
-    'ET_FOLLOWER_ROOT_DIR': os.path.join(TMP_DIR, '.et')
+    'ET_HOME': os.path.join(TMP_DIR, '.et')
 })
 
-from config import ET_FOLLOWER_ROOT_DIR
+from config import ET_HOME
 
 
 class BaseClass(unittest.TestCase):
@@ -24,7 +24,7 @@ class BaseClass(unittest.TestCase):
         clean_mkdir(TMP_DIR)
         clean_mkdir(self.source_proj_path)
 
-        self.assertIsNotDir(ET_FOLLOWER_ROOT_DIR)
+        self.assertIsNotDir(ET_HOME)
 
         # scaffold out a directory to test init on
         Repo.init(self.source_proj_path)

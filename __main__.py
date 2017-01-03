@@ -1,4 +1,6 @@
-import os
+import sys
+
+VERBOSE = True
 
 if __name__ == '__main__':
     # import argparse
@@ -7,7 +9,6 @@ if __name__ == '__main__':
     # args = parser.parse_args()
     # command = args.command
     try:
-        import sys
         command = sys.argv[1]
     except Exception as e:
         exit('Must specify a command')
@@ -23,4 +24,7 @@ if __name__ == '__main__':
             else:
                 print('Unknown command: {0}'.format(command))
         except Exception as e:
-            raise
+            if VERBOSE:
+                raise
+            else:
+                sys.exit(e)
