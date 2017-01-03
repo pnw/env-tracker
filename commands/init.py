@@ -1,9 +1,6 @@
-import sys
 from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
-from logger import log
 from config import ET_HOME, TO_FOLLOWER_SYMLINK_NAME, TO_SOURCE_SYMLINK_NAME
-from utils import critical_error
 
 
 def init(path: str, project_name: str = ''):
@@ -17,7 +14,7 @@ def init(path: str, project_name: str = ''):
     """
     try:
         repo = Repo(path=path)
-    except InvalidGitRepositoryError as e:
+    except InvalidGitRepositoryError:
         raise Exception('Provided path is not a git repository')
 
     source_path = Path(repo.working_dir)
@@ -29,7 +26,6 @@ def init(path: str, project_name: str = ''):
     to_follower_symlink = source_path / TO_FOLLOWER_SYMLINK_NAME
     to_source_symlink = follower_path / TO_SOURCE_SYMLINK_NAME
 
-    # ETAFTP, I know, but this prevents me from having to rollback in the event of errors
     if follower_path.exists():
         # TODO: make this more fault-tolerant by inpecting the follower path
         # if the follower path is already linked to the current project, then we don't need to fail
@@ -40,9 +36,11 @@ def init(path: str, project_name: str = ''):
         raise Exception('This repo is already linked to a follower directory')
 
     follower_path.mkdir()
+    Repo.init(follower_path)
+
     to_follower_symlink.symlink_to(follower_path)
     to_source_symlink.symlink_to(source_path)
 
-    Repo.init(follower_path)
+    # TODO: add the source symink to the follower directory to .gitignore
 
     print('Success! New env-tracker repository initialized at {0}'.format(follower_path))
