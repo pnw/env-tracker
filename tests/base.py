@@ -6,10 +6,10 @@ from pathlib import Path
 
 from git import Repo
 
-TMP_PATH = Path(tempfile.TemporaryDirectory().name)
+TMP_ROOT = Path(tempfile.TemporaryDirectory().name).resolve()
 
 os.environ.update({
-    'ET_HOME': str(TMP_PATH / '.et')
+    'ET_HOME': str(TMP_ROOT / '.et')
 })
 
 from config import ET_HOME
@@ -18,19 +18,21 @@ from config import ET_HOME
 class BaseClass(unittest.TestCase):
     test_proj_name = 'test_project'
 
-    TMP_PATH = TMP_PATH
+    TMP_ROOT = TMP_ROOT
 
     @property
     def source_proj_path(self) -> Path:
-        return TMP_PATH / self.test_proj_name
+        return TMP_ROOT / self.test_proj_name
 
     @property
     def follower_proj_path(self) -> Path:
-        return TMP_PATH / ET_HOME / self.test_proj_name
+        return TMP_ROOT / ET_HOME / self.test_proj_name
 
     def setUp(self):
-        clean_mkdir(TMP_PATH)
+        clean_mkdir(TMP_ROOT)
         clean_mkdir(self.source_proj_path)
+        # so we can work with relative paths
+        os.chdir(str(self.source_proj_path))
 
         self.assertIsNotDir(ET_HOME)
 
@@ -41,7 +43,7 @@ class BaseClass(unittest.TestCase):
         self.assertIsDir(self.source_proj_path, '.git')
 
     def tearDown(self):
-        rmdir(TMP_PATH)
+        rmdir(TMP_ROOT)
 
     def assertIsFile(self, path: Path, msg: str = ''):
         if not msg:
@@ -52,6 +54,11 @@ class BaseClass(unittest.TestCase):
         if not msg:
             msg = 'expected file to not exist: {}'.format(path)
         self.assertFalse(path.is_file(), msg)
+
+    def assertPathExists(self, path: Path, msg: str = ''):
+        if not msg:
+            msg = 'expected location to exist: {}'.format(path)
+        self.assertTrue(path.exists(), msg)
 
     def assertPathDoesNotExist(self, path: Path, msg: str = ''):
         if not msg:
@@ -80,10 +87,21 @@ class BaseClass(unittest.TestCase):
 
     def assertSymlinkResolvesTo(self, symlink_path: Path, resolution: Path, msg: str = ''):
         if not msg:
-            msg = 'expected symlink\n{}\nto resolve to\n{}\nbut resolves to\n{}\n'.format(symlink_path, resolution, symlink_path.resolve())
-
+            msg = 'expected symlink\n{}\nto resolve to\n{}\nbut resolves to\n{}\n'.format(symlink_path, resolution,
+                                                                                          symlink_path.resolve())
+        self.assertIsSymlink(symlink_path)
+        self.assertPathExists(resolution)
         self.assertTrue(symlink_path.resolve() == Path(resolution).resolve(), msg)
 
+    def assertIsAbsolutePath(self, path: Path, msg: str = ''):
+        if not msg:
+            msg = 'expected path to be absolute: {}'.format(path)
+        self.assertTrue(path.is_absolute(), msg)
+
+    def assertIsNotAbsolutePath(self, path: Path, msg: str = ''):
+        if not msg:
+            msg = 'expected path to not be absolute: {}'.format(path)
+        self.assertFalse(path.is_absolute(), msg)
 
 
 def rmdir(path: Path) -> bool:

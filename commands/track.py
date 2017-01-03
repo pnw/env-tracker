@@ -1,10 +1,10 @@
 from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 
-from config import TO_FOLLOWER_SYMLINK_NAME, TO_SOURCE_SYMLINK_NAME
+from config import FOLLOWER_SYMLINK_NAME, SOURCE_SYMLINK_NAME
 
 
-def track(filepath, *opts):
+def track(filepath: [str, Path]):
     """
     1. move the file to the et directory
     2. track the file in the et repo
@@ -17,10 +17,7 @@ def track(filepath, *opts):
     file_path = Path(filepath)
 
     if not file_path.exists():
-        raise Exception('Path does not exist')
-
-    if not file_path.is_file():
-        raise Exception('Path provided is not a file')
+        raise FileNotFoundError('Path does not exist')
 
     if file_path.is_symlink():
         raise Exception('File is already symlinked')
@@ -30,25 +27,25 @@ def track(filepath, *opts):
     except InvalidGitRepositoryError:
         raise Exception('Not in a project')
 
-    source_path = Path(repo.working_dir)
-    follower_path = (source_path / TO_FOLLOWER_SYMLINK_NAME).resolve()
+    source_dir = Path(repo.working_dir)
+    follower_dir = (source_dir / FOLLOWER_SYMLINK_NAME).resolve()
 
-    if (source_path / TO_SOURCE_SYMLINK_NAME).exists():
+    if (source_dir / SOURCE_SYMLINK_NAME).exists():
         raise Exception('You may not track files from the follower directory')
 
-    if not (source_path / TO_FOLLOWER_SYMLINK_NAME).exists():
+    if not (source_dir / FOLLOWER_SYMLINK_NAME).exists():
         raise Exception('Cannot find reference to a follower directory')
 
-    if (follower_path / TO_SOURCE_SYMLINK_NAME).resolve() != source_path:
+    if (follower_dir / SOURCE_SYMLINK_NAME).resolve() != source_dir:
         # TODO: add a "doctor" command to fix symlinks between repos, `et doctor source_dir follower_dir`
         raise Exception('Project misconfigured - the follower directory is tracking a different project')
 
     try:
-        relative_path = file_path.resolve().relative_to(source_path)
+        relative_path = file_path.resolve().relative_to(source_dir)
     except ValueError:
         raise Exception('May only track files in the source directory')
 
-    destination_path = follower_path / relative_path
+    destination_path = follower_dir / relative_path
 
     if destination_path.exists():
         raise Exception('Something else already exists at: {}'.format(destination_path))

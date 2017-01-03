@@ -20,7 +20,7 @@ class TestInitCommand(BaseClass):
         self.assertIsNotDir(ET_HOME / self.test_proj_name)
         init(self.source_proj_path)
         self.assertIsDir(ET_HOME / self.test_proj_name)
-        self.assertIsDir(ET_HOME /self.test_proj_name / '.git')
+        self.assertIsDir(ET_HOME / self.test_proj_name / '.git')
 
     def test_you_can_specify_a_name(self):
         project_name = 'anothername'
@@ -29,7 +29,6 @@ class TestInitCommand(BaseClass):
         self.assertIsNotDir(ET_HOME / self.test_proj_name)
         self.assertIsDir(ET_HOME / project_name)
         self.assertIsDir(ET_HOME / project_name / '.git')
-
 
     def test_it_links_the_projects_together(self):
         init(self.source_proj_path)
