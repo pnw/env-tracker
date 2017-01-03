@@ -11,12 +11,10 @@ ET_FOLLOWER_ROOT_DIR = os.environ.get('ET_FOLLOWER_ROOT_DIR', os.path.join(os.pa
 
 ET_CONFIG_LOCATION = os.environ.get('ET_CONFIG_LOCATION', os.path.join(ET_FOLLOWER_ROOT_DIR, '.etconfig'))
 
+ET_SYMLINK_NAME = os.environ.get('ET_SYMLINK_NAME', '.et')
+
 ET_ROOT_PATH = Path(ET_FOLLOWER_ROOT_DIR)
 ET_CONFIG_PATH = Path(ET_CONFIG_LOCATION)
-
-
-def get_follower_path(project_name):
-    return os.path.join(ET_FOLLOWER_ROOT_DIR, project_name)
 
 
 class Project(object):

@@ -1,7 +1,7 @@
+from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 from logger import log
-from config import get_follower_path, load_et_config
-import os
+from config import ET_FOLLOWER_ROOT_DIR, ET_SYMLINK_NAME
 
 
 def init(path: str, project_name: str = ''):
@@ -19,30 +19,27 @@ def init(path: str, project_name: str = ''):
         log.debug('TODO: Give better error when we arent in a repo')
         raise
 
-    if (not project_name):
-        project_name = os.path.split(repo.working_dir)[-1]
-    follower_dir = get_follower_path(project_name)
+    source_path = Path(repo.working_dir)
 
-    log.info('Creating project with name: {}'.format(project_name))
-    log.info('ET path: {}'.format(follower_dir))
+    if not project_name:
+        project_name = source_path.name
 
-    try:
-        log.info('Creating new ET project at: {}'.format(follower_dir))
-        os.makedirs(follower_dir)
-    except FileExistsError:
-        print('Project already exists')
+    follower_path = Path(ET_FOLLOWER_ROOT_DIR) / project_name
+    sympath = source_path / ET_SYMLINK_NAME
 
-    log.info('Initializing empty git repo at: {}'.format(follower_dir))
-    Repo.init(follower_dir)
+    # ETAFTP, I know, but this prevents me from having to rollback in the event of errors
+    if follower_path.exists():
+        # TODO: make this more fault-tolerant by inpecting the follower path
+        # if the follower path is already linked to the current project, then we don't need to fail
+        raise Exception('Follower directory already exists')
 
-    log.info('Creating config file')
-    config = load_et_config()
+    if sympath.exists():
+        # TODO: make this more fault tolerant by inspecting the symlink path
+        raise Exception('This repo is already linked to a follower directory')
 
-    config.register_project(
-        source_dir=repo.working_dir,
-        follower_dir=follower_dir,
-        name=project_name
-    )
-    config.save()
+    follower_path.mkdir()
+    sympath.symlink_to(follower_path)
 
-    print('Success! New env-tracker repository initialized at {0}'.format(follower_dir))
+    Repo.init(follower_path)
+
+    print('Success! New env-tracker repository initialized at {0}'.format(follower_path))
