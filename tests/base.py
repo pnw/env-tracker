@@ -21,26 +21,26 @@ class BaseClass(unittest.TestCase):
     TMP_ROOT = TMP_ROOT
 
     @property
-    def source_proj_path(self) -> Path:
+    def parent_proj_path(self) -> Path:
         return TMP_ROOT / self.test_proj_name
 
     @property
-    def follower_proj_path(self) -> Path:
+    def child_proj_path(self) -> Path:
         return TMP_ROOT / ET_HOME / self.test_proj_name
 
     def setUp(self):
         clean_mkdir(TMP_ROOT)
-        clean_mkdir(self.source_proj_path)
+        clean_mkdir(self.parent_proj_path)
         # so we can work with relative paths
-        os.chdir(str(self.source_proj_path))
+        os.chdir(str(self.parent_proj_path))
 
         self.assertIsNotDir(ET_HOME)
 
         # scaffold out a directory to test init on
-        Repo.init(self.source_proj_path)
+        Repo.init(self.parent_proj_path)
 
-        self.assertIsDir(self.source_proj_path)
-        self.assertIsDir(self.source_proj_path, '.git')
+        self.assertIsDir(self.parent_proj_path)
+        self.assertIsDir(self.parent_proj_path, '.git')
 
     def tearDown(self):
         rmdir(TMP_ROOT)

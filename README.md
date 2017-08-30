@@ -1,49 +1,35 @@
+TODO: http://pre-commit.com/
+Use a pre commit hook to do... something. Maybe check for changes and flag changes to the tracked files.
+Maybe we can hook branch checkouts and changes and automatically commit changes to the tracked files or something.
+
 # env-tracker
 
 Track untracked files in your project
 A meta git repo to track changes to untracked files in your projects
 
-## Possible names
+## Etymology
 
-- env-tracker aka "et" - available on npm
+ET is short for Env Tracker. The name originally comes from a desire to 
+track changes to .env files that aren't checked into source control.
+I periodically found myself in situations where I made a change to
+a .env file that only to find that I needed to revert that change.
+At worst, I think I spent at least a few hours one time trying to
+track down a password I had lost.
+
+Env Tracker gives you a way to enjoy the benefits of source control
+for your .env files and anything else you don't 
+want committed to your project repository.
+
 
 ## Caveats
 
 - Only works on github repos
-- Does not allow granular control over which env files to commit when running the `commit` command. You can manually manage the `~/.envs`
+- Does not allow granular control over which env files to commit when running the `commit` command. You can manually manage the `~/.et`
 
-## Spec
-
-- Creates a git repo that lives in `~/.envs`
-- Each project gets its own git repo...? Makes renaming and moving things around easier
-- The `.etconfig/` directory is its own git repo as well - to follow the spirit of the whole thing
-  - `.etconfig/project-mapping`
-- Each project is registered in `~/.envs` as `github-user/project-name`
-- The project directories in `~/.envs` mirrors the corresponding project structure. E.g. `~/src/my-project/client/app/env.json` maps to `~/.envs/my-github-username/my-project/client/app/env.json`
-- It should project against pushing the directory to a remote
-- Each project also has a special `.etconfig` file with important variables like
-    - project home
-    - any configuration options
-- There exists a top-level `.etconfig/projects` file that maps project directories to their corresponding et directory.
-  - This should allow the tool to determine the et directory based on your current working directory without
-  - e.g. when registering a file, crawl up the directory tree until you hit a directory registered in `.etconfig/projects`, and then you have the working directory and the corresponding et subdir
-  - This keeps the cli stateless - all state is stored in config files
-
-- Optionally adds a postcommit hook to your git repo to remind you if you have unsaved changes to your env files
-
-## Commands
-
-- `install` Initialize the `~/.envs` repo
-- `list` List all of the projects being tracked
-- `init` Registers a new project. Inuits the name/namespace from the git configuration
-  - optionally allow user to specify name...? that might complicate the
-- `rmproject`
-- `track` Registers an untracked file
-- `commit` - accepts `-m`; git commits all of the env files in the current project. To
-- `copy` - not sure how this would work - handles renaming a github project
-- `restore` - Not sure how this will work - if I delete my project, and then re-clone it again, I should be able to restore my environment config from the `~/.envs` repo
-  - This should be idempotent, so it can be used to validate that the
-- `status` - Show if there are any changes that need to be committed
+## Goals
+This project should be as minimal as possible. 
+It should be as stateless as possible.
+It should only require the filesystem and not require configuration files or database
 
 
 ## Process
@@ -53,13 +39,7 @@ A meta git repo to track changes to untracked files in your projects
 `et install`
 
 ```bash
-mkdir -p ~/.envs
-mkdir -p ~/.envs .etconfig
-cd ~/.envs .etconfig
-git init
-touch projects
-git add -A
-git commit -m "Scaffold"
+mkdir -p ~/.et
 ```
 
 ### Adding a project
@@ -82,15 +62,15 @@ EXAMPLE:
 
 ```bash
 DEFAULT_ETDIR = "git remote -v | head -n1 | awk '{print $2}' | sed -e 's,.*:\(.*/\)\?,,' -e 's/\.git$//' -e 's/https:\/\/github\.com\///'"  # use this if the user doesn't provide a name
-mkdir ~/.envs/$etdir
-cd ~/.envs/$etdir
+mkdir ~/.et/$etdir
+cd ~/.et/$etdir
 git init
 echo """
 [{
   "project-dir": "~/src/mediasuite/sarr",
-  "et-dir": "~/.envs/mediasuite/sarr"
+  "et-dir": "~/.et/mediasuite/sarr"
 }]  # append to the config json or whatever
-""" > ~/.envs/.etconfig/projects
+""" > ~/.et/.etconfig/projects
 ```
 
 ### Tracking a new file
@@ -107,6 +87,18 @@ cd $ET_PROJ
 git add -A .
 git commit -m "Track new file: server/.env"
 ```
+
+1. move the file
+2. symlink the file back to the original location
+3. if the tracked dir is clean - add and commit the file to the tracked repo
+    - else if the tracked dir is dirty
+        - if nothing is staged - add and commit the file to the tracked repo
+        - else if stuff is staged - add the file to the tracked repo, but throw message saying we won't auto-commit
+4. if the source file is not tracked by git yet
+    - Add a pattern to .gitignore to make sure the file doesnt get tracked
+    - else if the source file is tracked by the source repo
+        - throw an error message
+
 
 
 ### Untracking a file

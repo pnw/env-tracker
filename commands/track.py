@@ -1,7 +1,8 @@
 from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 
-from config import FOLLOWER_SYMLINK_NAME, SOURCE_SYMLINK_NAME
+from config import PARENT_SYMLINK_NAME
+from utils import find_child_dir, init_project_from_path
 
 
 def track(filepath: [str, Path]):
@@ -22,34 +23,22 @@ def track(filepath: [str, Path]):
     if file_path.is_symlink():
         raise Exception('File is already symlinked')
 
-    try:
-        repo = Repo(file_path, search_parent_directories=True)
-    except InvalidGitRepositoryError:
-        raise Exception('Not in a project')
 
-    source_dir = Path(repo.working_dir)
-    follower_dir = (source_dir / FOLLOWER_SYMLINK_NAME).resolve()
+    project = init_project_from_path(file_path)
 
-    if (source_dir / SOURCE_SYMLINK_NAME).exists():
-        raise Exception('You may not track files from the follower directory')
-
-    if not (source_dir / FOLLOWER_SYMLINK_NAME).exists():
-        raise Exception('Cannot find reference to a follower directory')
-
-    if (follower_dir / SOURCE_SYMLINK_NAME).resolve() != source_dir:
-        # TODO: add a "doctor" command to fix symlinks between repos, `et doctor source_dir follower_dir`
-        raise Exception('Project misconfigured - the follower directory is tracking a different project')
+    parent_dir = project.parent_dir
+    child_dir = project.child_dir
 
     try:
-        relative_path = file_path.resolve().relative_to(source_dir)
+        relative_path = file_path.resolve().relative_to(parent_dir)
     except ValueError:
-        raise Exception('May only track files in the source directory')
+        raise Exception('May only track files in the parent directory')
 
-    destination_path = follower_dir / relative_path
+    destination_path = child_dir / relative_path
 
     if destination_path.exists():
         raise Exception('Something else already exists at: {}'.format(destination_path))
 
     file_path.replace(destination_path)
     file_path.symlink_to(destination_path)
-    # TODO: git add and commit the new file to the follower repo
+    # TODO: git add and commit the new file to the child repo

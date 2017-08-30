@@ -1,47 +1,64 @@
 from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
-from config import ET_HOME, FOLLOWER_SYMLINK_NAME, SOURCE_SYMLINK_NAME
+from config import ET_HOME, PARENT_SYMLINK_NAME
+from utils import find_child_dir
 
-
-def init(path: [str,Path], project_name: str = ''):
+# TODO: make this only accept a Path instance - need to use
+def init(parent_dir: [str, Path] = None, project_name: str = None) -> None:
     """
-    usage: `et init path [project_name]`
-    TODO: allow the user to specify the path to the project instead of relying on the current directory
+    usage: `et init [parent_dir] [project_name]`
+    TODO: allow the user to specify the parent_dir to the project instead of relying on the current directory
 
     Initialize a project
     1. Detects the current repo
     2. Grab the name of the current repo and create a parallel git repo in the ER_DIR
-    """
-    ## TODO: if no path is provided, then we can crawl up the tree to the nearest git repo to
-    try:
-        repo = Repo(path=path)
-    except InvalidGitRepositoryError:
-        raise
 
-    source_path = Path(repo.working_dir)
+    :param parent_dir: Path to use as the parent project
+    :param project_name: Name of the directory to store the child dir in ET_HOME directory
+    """
+    if parent_dir is None:
+        # TODO: test
+        # Use current directory
+        parent_dir = Path().resolve()
+    elif isinstance(parent_dir, str):
+        # TODO: test
+        # Use specified directory
+        parent_dir = Path(parent_dir).resolve()
+    else:
+        # parent_dir is instance of Path
+        parent_dir = parent_dir.resolve()
+
+    # Source must be a directory. Doesn't make sense otherwise
+    if not parent_dir.is_dir():
+        # TODO: test
+        raise Exception(f'{parent_dir} is not a valid directory')
 
     if not project_name:
-        project_name = source_path.name
+        project_name = parent_dir.name
 
-    follower_path = Path(ET_HOME) / project_name
-    to_follower_symlink = source_path / FOLLOWER_SYMLINK_NAME
-    to_source_symlink = follower_path / SOURCE_SYMLINK_NAME
+    child_path = Path(ET_HOME) / project_name
 
-    if follower_path.exists():
-        # TODO: make this more fault-tolerant by inpecting the follower path
-        # if the follower path is already linked to the current project, then we don't need to fail
+    if child_path.exists():
+        # TODO: make this more fault-tolerant by inpecting the child parent_dir
+        # if the child parent_dir is already linked to the current project, then we don't need to fail
         raise Exception('Follower directory already exists')
 
-    if to_follower_symlink.exists():
-        # TODO: make this more fault tolerant by inspecting the symlink path
-        raise Exception('This repo is already linked to a follower directory')
+    # make sure we aren't already tracking
+    try:
+        current_child_dir = find_child_dir(parent_dir)
+    except Exception:
+        pass
+    else:
+        raise Exception(f'This repo is already linked to {current_child_dir}')
 
-    follower_path.mkdir(parents=True)
-    Repo.init(follower_path)
+    # Initialize the child dir and repo
+    child_path.mkdir(parents=True)
+    Repo.init(child_path)
 
-    to_follower_symlink.symlink_to(follower_path)
-    to_source_symlink.symlink_to(source_path)
+    # create a symlink file that points to the parent directory
+    to_parent_symlink = child_path / PARENT_SYMLINK_NAME
+    to_parent_symlink.symlink_to(parent_dir)
 
-    # TODO: add the source symink to the follower directory to .gitignore
+    # TODO: register a post-commit hook to automatically commit changes in the child directory
 
-    print('Success! New env-tracker repository initialized at {0}'.format(follower_path))
+    print('Success! New env-tracker repository initialized at {0}'.format(child_path))
