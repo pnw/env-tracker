@@ -32,7 +32,9 @@ def find_child_dir(parent_dir: Path) -> Path:
 
 class Project(object):
     def __init__(self, parent_dir, child_dir):
+        # Parent dir is the project repo
         self.parent_dir = parent_dir
+        # Child dir is where we keep the tracked files
         self.child_dir = child_dir
 
     def child_file_exists(self, fpath: Path) -> bool:
@@ -41,10 +43,10 @@ class Project(object):
     def parent_file_exists(self, fpath: Path) -> bool:
         return (self.parent_dir / fpath).exists()
 
-    def corresponding_child_path(self, fpath: Path) -> bool:
+    def corresponding_child_path(self, fpath: Path) -> Path:
         try:
-            relative_to_parent  = fpath.resolve().relative_to(self.parent_dir)
-        except VaueError:
+            relative_to_parent = fpath.resolve().relative_to(self.parent_dir)
+        except ValueError:
             raise Exception(f'"{fpath}" not found in "{self.parent_dir}"')
         return self.child_dir / relative_to_parent
 
@@ -55,6 +57,10 @@ class Project(object):
         return fpath.resolve().relative_to(self.child_dir)
 
 
+def path_in_et_home(path: Path) -> bool:
+    return ET_HOME in path.parents or path == ET_HOME
+
+
 def init_project_from_path(pth: Path) -> Project:
     try:
         repo = Repo(pth, search_parent_directories=True)
@@ -62,10 +68,6 @@ def init_project_from_path(pth: Path) -> Project:
         raise
 
     working_repo_dir = Path(repo.working_dir)
-
-    if ET_HOME in working_repo_dir.parents or pth == ET_HOME:
-        # running a command from the ET_HOME directory. Not allowed
-        raise InETHome(f'Cannot use et from within {ET_HOME}')
 
     child_dir = find_child_dir(working_repo_dir)
 

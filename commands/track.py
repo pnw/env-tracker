@@ -1,8 +1,10 @@
 from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 
+from config import ET_HOME
 from config import PARENT_SYMLINK_NAME
-from utils import find_child_dir, init_project_from_path
+from exceptions import InETHome
+from utils import find_child_dir, init_project_from_path, path_in_et_home
 
 
 def track(filepath: [str, Path]):
@@ -23,6 +25,8 @@ def track(filepath: [str, Path]):
     if file_path.is_symlink():
         raise Exception('File is already symlinked')
 
+    if path_in_et_home(file_path):
+        raise InETHome(f'Cannot track files from within {ET_HOME}')
 
     project = init_project_from_path(file_path)
 
@@ -32,13 +36,15 @@ def track(filepath: [str, Path]):
     try:
         relative_path = file_path.resolve().relative_to(parent_dir)
     except ValueError:
-        raise Exception('May only track files in the parent directory')
+        raise Exception(f'May only track files under {parent_dir}')
 
     destination_path = child_dir / relative_path
 
     if destination_path.exists():
         raise Exception('Something else already exists at: {}'.format(destination_path))
 
+    # move the file to the child dir
     file_path.replace(destination_path)
+    # symlink the file back to its original location
     file_path.symlink_to(destination_path)
     # TODO: git add and commit the new file to the child repo
