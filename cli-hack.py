@@ -11,7 +11,7 @@ if __name__ == '__main__':
     try:
         command = sys.argv[1]
     except Exception as e:
-        exit('Must specify a command. See et.__main__.py for options')
+        exit('Must specify a command. See et.cli-hack.py for options')
     else:
         positional_args = sys.argv[2:]
         # TODO: no reason why we can't just have dynamic imports here

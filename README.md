@@ -20,6 +20,11 @@ Env Tracker gives you a way to enjoy the benefits of source control
 for your .env files and anything else you don't 
 want committed to your project repository.
 
+## Development
+
+Run `python setup.py develop` to install the package locally
+Run `python setup.py develop --uninstall` to uninstall the local installation
+See https://stackoverflow.com/questions/3606457/removing-python-module-installed-in-develop-mode
 
 ## Caveats
 

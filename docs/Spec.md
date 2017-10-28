@@ -29,8 +29,8 @@
   - optionally allow user to specify name.
   - force the user to specify a name if the current dirname is already taken
   - allow user to set `auto-commit=false` to omit registering the post-commit hook
-- `track filename` Registers an untracked file
-- `untrack filename` Unregisters a tracked file and moved it back
+- `track filename` Registers an untracked file - rename to add
+- `untrack filename` Unregisters a tracked file and moved it back - rename to rm
 - Git commit hook that looks for changes in the follower dir and automatically commits changes
     - commit message contains the branch you were on when you committed and the actual commit message.
     - follower directory should mirror upstream branches, because it would be prohibitively complicated to try to keep track of everything, like a merge happening on a remote and deleting the branch.
