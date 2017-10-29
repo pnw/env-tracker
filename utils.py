@@ -6,62 +6,125 @@ from config import PARENT_SYMLINK_NAME, ET_HOME
 from exceptions import InETHome, NotInProject, MissingChild
 
 
-def path_is_child_repo(path: Path) -> bool:
-    return path / PARENT_SYMLINK_NAME
+class ProjectPair(object):
+    """
+    Represents a pair of repositories that are linked together
+    """
+
+    def __init__(self, parent_dir, child_dir):
+        """
+        :param parent_dir: the project repo
+        :param child_dir: the et repo where we keep tracked files
+        """
+        self.parent_dir = parent_dir
+        self.child_dir = child_dir
+
+    @classmethod
+    def from_path(cls, input_path: Path):
+        """
+        Identify a ProjectPair given a path.
+        An error will be raised if the input_path is not in a valid
+         project directory
+        """
+        try:
+            repo = Repo(input_path.resolve(), search_parent_directories=True)
+        except InvalidGitRepositoryError:
+            raise
+
+        working_repo = Path(repo.working_dir)
+
+        if ET_HOME in working_repo.parents:
+            parent_dir = working_repo / PARENT_SYMLINK_NAME
+            return cls(parent_dir=parent_dir, child_dir=working_repo)
+        else:
+            child_dir = find_child_dir(working_repo)
+            return cls(parent_dir=working_repo, child_dir=child_dir)
+
+    @property
+    def parent_repo(self):
+        return Repo(str(self.parent_dir))
+
+    @property
+    def child_repo(self):
+        return Repo(str(self.child_dir))
+
+
+class File(object):
+    """
+    Represents a file or directory that exists in the linked project pair.
+    The "File" moniker is for lack of a better name, since this can
+     represent a file, directory, symlink, or any of the two
+    """
+
+    def __init__(self, project: ProjectPair, original_path: Path):
+        self.project = project
+        self.original_path = original_path.resolve()
+        self.relative_path = get_relative_path(project, self.original_path)
+
+    @classmethod
+    def from_path(cls, input_path: Path):
+        """
+        Constructor method that creates a ProjectPair instance from the path too.
+        """
+        return cls(ProjectPair.from_path(input_path), original_path=input_path)
+
+    @property
+    def working_from_parent(self):
+        """
+        :return: Whether not the original referenced file is in the parent dir
+        """
+        return self.project.parent_dir in self.original_path.parents
+
+    @property
+    def child_path(self) -> Path:
+        return self.project.child_dir / self.relative_path
+
+    @property
+    def parent_path(self) -> Path:
+        return self.project.parent_dir / self.relative_path
+
+
+def get_relative_path(project: ProjectPair, input_path: Path) -> Path:
+    """
+    Finds the relative path for a path under either of the project dirs
+    """
+    abs_path = input_path.resolve()
+    try:
+        return abs_path.relative_to(project.parent_dir)
+    except ValueError:
+        pass
+
+    try:
+        return abs_path.relative_to(project.child_dir)
+    except ValueError:
+        pass
+
+    raise ValueError(f'"{input_path}" not found in "{project.parent_dir}" '
+                     f'or "{project.child_dir}"')
 
 
 def find_child_dir(parent_dir: Path) -> Path:
     """
-    Browse the ET_HOME directory to find the directory that tracks the parent dir
+    Browse the ET_HOME directory to find the directory
+     that tracks the parent dir
     """
-    if parent_dir == ET_HOME or ET_HOME in parent_dir.parents:
-        raise Exception(f'Cannot run this from within {ET_HOME}')
-
     for child_dir in ET_HOME.iterdir():
-        if child_dir.name in ['.git']:
-            # skip special directories
-            continue
-
         parent_path = (child_dir / PARENT_SYMLINK_NAME).resolve()
         if parent_dir == parent_path:
             return child_dir
 
     # User needs to run `et init` on the parent directory.
-    raise MissingChild('Could not find an associated project for the current directory')
+    raise MissingChild('Could not find an associated project '
+                       'for the current directory')
 
 
-class Project(object):
-    def __init__(self, parent_dir, child_dir):
-        # Parent dir is the project repo
-        self.parent_dir = parent_dir
-        # Child dir is where we keep the tracked files
-        self.child_dir = child_dir
-
-    def child_file_exists(self, fpath: Path) -> bool:
-        return (self.child_dir / fpath).exists()
-
-    def parent_file_exists(self, fpath: Path) -> bool:
-        return (self.parent_dir / fpath).exists()
-
-    def corresponding_child_path(self, fpath: Path) -> Path:
-        try:
-            relative_to_parent = fpath.resolve().relative_to(self.parent_dir)
-        except ValueError:
-            raise Exception(f'"{fpath}" not found in "{self.parent_dir}"')
-        return self.child_dir / relative_to_parent
-
-    def relative_to_parent(self, fpath: Path) -> Path:
-        return fpath.resolve().relative_to(self.parent_dir)
-
-    def relative_to_child(self, fpath: Path) -> Path:
-        return fpath.resolve().relative_to(self.child_dir)
-
-
+# deprecated
 def path_in_et_home(path: Path) -> bool:
     return ET_HOME in path.parents or path == ET_HOME
 
 
-def init_project_from_path(pth: Path) -> Project:
+# deprecated
+def init_project_from_path(pth: Path) -> ProjectPair:
     try:
         repo = Repo(pth, search_parent_directories=True)
     except InvalidGitRepositoryError:
@@ -71,4 +134,4 @@ def init_project_from_path(pth: Path) -> Project:
 
     child_dir = find_child_dir(working_repo_dir)
 
-    return Project(working_repo_dir, child_dir)
+    return ProjectPair(working_repo_dir, child_dir)
