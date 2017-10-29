@@ -16,10 +16,13 @@ def init(parent_dir: [str, Path] = None, project_name: str = None) -> None:
     :param parent_dir: Path to use as the parent project
     :param project_name: Name of the directory to store the child dir in ET_HOME directory
     """
+    # handled by click
     if parent_dir is None:
         # TODO: test
         # Use current directory
         parent_dir = Path().resolve()
+
+    # handled by click
     elif isinstance(parent_dir, str):
         # TODO: test
         # Use specified directory
@@ -29,6 +32,7 @@ def init(parent_dir: [str, Path] = None, project_name: str = None) -> None:
         parent_dir = parent_dir.resolve()
 
     # Source must be a directory. Doesn't make sense otherwise
+    # handled by click
     if not parent_dir.is_dir():
         # TODO: test
         raise Exception(f'{parent_dir} is not a valid directory')
