@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from git import Repo, InvalidGitRepositoryError
+from git import Repo, InvalidGitRepositoryError, Git
 
 from config import PARENT_SYMLINK_NAME, ET_HOME
 from exceptions import MissingChild
@@ -47,6 +47,14 @@ class PairedProject(object):
     @property
     def child_repo(self):
         return Repo(str(self.child_dir))
+
+    @property
+    def parent_raw_git(self):
+        return Git(str(self.parent_dir))
+
+    @property
+    def child_raw_git(self):
+        return Git(str(self.child_dir))
 
 
 class PairedPath(object):

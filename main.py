@@ -5,7 +5,7 @@ from git import Repo, Git
 from git.exc import InvalidGitRepositoryError
 
 from config import ET_HOME, PARENT_SYMLINK_NAME
-from utils import PairedPath
+from utils import PairedPath, PairedProject
 
 
 @click.group()
@@ -122,3 +122,12 @@ def cmd_untrack(file):
     child_repo = pp.project.child_repo
     child_repo.index.remove([str(pp.relative_path)])
     child_repo.index.commit(f'Stop tracking for "{pp.relative_path}"')
+
+
+@et.command('status', short_help='`git status` on the linked repository')
+def cmd_status():
+    proj = PairedProject.from_path(Path('.'))
+    g = proj.child_raw_git
+    click.echo(click.style(f'Showing git status for "{proj.child_dir}"', fg='red'))
+    click.echo()
+    click.echo(g.status())
