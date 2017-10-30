@@ -11,13 +11,14 @@ class PairedProject(object):
     Represents a pair of repositories that are linked together
     """
 
-    def __init__(self, parent_dir, child_dir):
+    def __init__(self, parent_dir: Path, child_dir: Path, working_from_parent: bool):
         """
         :param parent_dir: the project repo
         :param child_dir: the et repo where we keep tracked files
         """
         self.parent_dir = parent_dir
         self.child_dir = child_dir
+        self.working_from_parent = working_from_parent
 
     @classmethod
     def from_path(cls, input_path: Path):
@@ -27,18 +28,18 @@ class PairedProject(object):
          project directory
         """
         try:
-            repo = Repo(input_path.resolve(), search_parent_directories=True)
+            repo = Repo(input_path, search_parent_directories=True)
         except InvalidGitRepositoryError:
             raise
 
         working_repo = Path(repo.working_dir)
 
         if ET_HOME in working_repo.parents:
-            parent_dir = working_repo / PARENT_SYMLINK_NAME
-            return cls(parent_dir=parent_dir, child_dir=working_repo)
+            parent_dir = (working_repo / PARENT_SYMLINK_NAME).resolve()
+            return cls(parent_dir=parent_dir, child_dir=working_repo, working_from_parent=False)
         else:
             child_dir = find_child_dir(working_repo)
-            return cls(parent_dir=working_repo, child_dir=child_dir)
+            return cls(parent_dir=working_repo, child_dir=child_dir, working_from_parent=True)
 
     @property
     def parent_repo(self):
@@ -65,7 +66,7 @@ class PairedPath(object):
 
     def __init__(self, project: PairedProject, original_path: Path):
         self.project = project
-        self.original_path = original_path.resolve()
+        self.original_path = original_path.absolute()
         self.relative_path = get_relative_path(project, self.original_path)
 
     @classmethod
@@ -80,7 +81,7 @@ class PairedPath(object):
         """
         :return: Whether not the original referenced file is in the parent dir
         """
-        return self.project.parent_dir in self.original_path.parents
+        return self.project.working_from_parent
 
     @property
     def child_path(self) -> Path:
@@ -98,14 +99,14 @@ class PairedPath(object):
         # import ipdb; ipdb.set_trace()
         return self.parent_path.is_symlink() \
                and (not self.child_path.is_symlink()) \
-               and self.child_path == self.parent_path.resolve()
+               and self.child_path.samefile(self.parent_path)
 
     def link(self):
         # move the file over to the child dir
-        self.parent_path.replace(pp.child_path)
+        self.parent_path.replace(self.child_path)
 
         # symlink the file back to its original location
-        self.parent_path.symlink_to(pp.child_path)
+        self.parent_path.symlink_to(self.child_path)
 
     def unlink(self):
         # This should always be a symlink, so no need to handle this being a dir instead
@@ -113,14 +114,14 @@ class PairedPath(object):
         self.parent_path.unlink()
 
         # move the file back to its original location
-        self.child_path.replace(pp.parent_path)
+        self.child_path.replace(self.parent_path)
 
 
 def get_relative_path(project: PairedProject, input_path: Path) -> Path:
     """
     Finds the relative path for a path under either of the project dirs
     """
-    abs_path = input_path.resolve()
+    abs_path = input_path.absolute()
     try:
         return abs_path.relative_to(project.parent_dir)
     except ValueError:
