@@ -5,7 +5,7 @@ from git import Repo, Git
 from git.exc import InvalidGitRepositoryError
 
 from config import ET_HOME, PARENT_SYMLINK_NAME
-from utils import PairedProject, find_child_dir, PairedPath
+from utils import PairedPath
 
 
 @click.group()
@@ -45,8 +45,9 @@ def cmd_init(ctx: click.core.Context, directory: Path, name: str):
         child_path.mkdir(parents=True)
     except FileExistsError:
         if to_parent_symlink.exists():
-            raise click.BadParameter(f'Path "{child_path}" already exists and links to: "{to_parent_symlink.resolve()}"',
-                                     param_hint=['name'])
+            raise click.BadParameter(
+                f'Path "{child_path}" already exists and links to: "{to_parent_symlink.resolve()}"',
+                param_hint=['name'])
         else:
             raise click.BadParameter(f'Path "{child_path}" already exists', param_hint=['name'])
     repo = Repo.init(child_path)
@@ -90,7 +91,8 @@ def cmd_track(file: Path):
 
     pp = PairedPath.from_path(file)
     if not pp.working_from_parent:
-        raise click.BadParameter(f'Path "{file.resolve()}" not found under "{pp.project.parent_dir}"', param_hint=['file'])
+        raise click.BadParameter(f'Path "{file.resolve()}" not found under "{pp.project.parent_dir}"',
+                                 param_hint=['file'])
 
     if pp.child_path.exists():
         raise click.BadParameter(f'Destination path "{pp.child_path}" already exists', param_hint=['file'])
@@ -110,7 +112,7 @@ def cmd_track(file: Path):
 @et.command('untrack', short_help='Stop tracking a file or directory')
 @click.argument('file', type=PathType(exists=True, file_okay=True, dir_okay=True, allow_dash=False, writable=True,
                                       readable=True, resolve_path=False))
-def untrack(file):
+def cmd_untrack(file):
     pp = PairedPath.from_path(file)
 
     if not pp.is_linked:
@@ -126,4 +128,3 @@ def untrack(file):
     child_repo = pp.project.child_repo
     child_repo.index.remove([str(pp.relative_path)])
     child_repo.index.commit(f'Stop tracking for "{pp.relative_path}"')
-

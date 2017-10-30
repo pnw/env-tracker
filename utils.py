@@ -3,7 +3,7 @@ from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 
 from config import PARENT_SYMLINK_NAME, ET_HOME
-from exceptions import InETHome, NotInProject, MissingChild
+from exceptions import MissingChild
 
 
 class PairedProject(object):
@@ -125,22 +125,3 @@ def find_child_dir(parent_dir: Path) -> Path:
     # User needs to run `et init` on the parent directory.
     raise MissingChild('Could not find an associated project '
                        'for the current directory')
-
-
-# deprecated
-def path_in_et_home(path: Path) -> bool:
-    return ET_HOME in path.parents or path == ET_HOME
-
-
-# deprecated
-def init_project_from_path(pth: Path) -> PairedProject:
-    try:
-        repo = Repo(pth, search_parent_directories=True)
-    except InvalidGitRepositoryError:
-        raise
-
-    working_repo_dir = Path(repo.working_dir)
-
-    child_dir = find_child_dir(working_repo_dir)
-
-    return PairedProject(working_repo_dir, child_dir)
