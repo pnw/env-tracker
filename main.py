@@ -5,8 +5,7 @@ from git import Repo, Git
 from git.exc import InvalidGitRepositoryError
 
 from config import ET_HOME, PARENT_SYMLINK_NAME
-from exceptions import MissingChild
-from utils import PairedPath, PairedProject
+from utils import PairedPath, PairedProject, get_current_project
 
 
 @click.group()
@@ -136,7 +135,7 @@ def cmd_status():
 
 
 @et.command('other', short_help='Output the linked repository directory')
-def cmd_cd():
+def cmd_other():
     """
     Writes the linked directory of the current location to stdout
 
@@ -144,13 +143,19 @@ def cmd_cd():
 
         cd `et other` - changes directory back and forth between linked repositories
     """
-    try:
-        proj = PairedProject.from_path(Path('.'))
-    except InvalidGitRepositoryError:
-        raise click.BadParameter('Not in a git repository')
-    except MissingChild as e:
-        raise click.BadParameter(e)
+    proj = get_current_project()
 
     other_dir = proj.child_dir if proj.working_from_parent else proj.parent_dir
 
     click.echo(other_dir)
+
+
+@et.command('commit', short_help='Commit all changes to the linked directory')
+@click.option('-m', '--message', type=click.STRING, default='Saving changes')
+def cmd_commit(message):
+    """
+    Commits all changes to the linked repository using `git add -u`
+    """
+    proj = get_current_project()
+    proj.child_repo.git.add(update=True)  # git add -u
+    proj.child_repo.index.commit(message)

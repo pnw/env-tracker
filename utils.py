@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import click
 from git import Repo, InvalidGitRepositoryError
 
 from config import PARENT_SYMLINK_NAME, ET_HOME
@@ -141,3 +142,11 @@ def find_child_dir(parent_dir: Path) -> Path:
     # User needs to run `et init` on the parent directory.
     raise MissingChild('Could not find an associated project '
                        'for the current directory')
+
+def get_current_project():
+    try:
+        return PairedProject.from_path(Path('.'))
+    except InvalidGitRepositoryError:
+        raise click.BadParameter('Not in a git repository')
+    except MissingChild as e:
+        raise click.BadParameter(e)
