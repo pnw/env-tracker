@@ -92,6 +92,21 @@ class PairedPath(object):
                and (not self.child_path.is_symlink()) \
                and self.child_path == self.parent_path.resolve()
 
+    def link(self):
+        # move the file over to the child dir
+        self.parent_path.replace(pp.child_path)
+
+        # symlink the file back to its original location
+        self.parent_path.symlink_to(pp.child_path)
+
+    def unlink(self):
+        # This should always be a symlink, so no need to handle this being a dir instead
+        # remove the symlink
+        self.parent_path.unlink()
+
+        # move the file back to its original location
+        self.child_path.replace(pp.parent_path)
+
 
 def get_relative_path(project: PairedProject, input_path: Path) -> Path:
     """

@@ -69,10 +69,10 @@ def file_is_git_tracked(repo: Repo, file: Path) -> bool:
     return bool(Git(repo.working_dir).ls_files(file))
 
 
-@et.command('track', short_help='Track a file or directory')
+@et.command('link', short_help='Link a file or directory')
 @click.argument('file', type=PathType(exists=True, file_okay=True, dir_okay=True, allow_dash=False, writable=True,
                                       readable=True, resolve_path=False))
-def cmd_track(file: Path):
+def cmd_link(file: Path):
     """
     Tracks a file in the parent repo.
 
@@ -90,6 +90,9 @@ def cmd_track(file: Path):
         raise click.BadParameter(f'Path "{file}" is already a symlink', param_hint=['file'])
 
     pp = PairedPath.from_path(file)
+    if pp.is_linked:
+        raise click.BadParameter(f'Path "{pp.relative_path}" is already linked')
+
     if not pp.working_from_parent:
         raise click.BadParameter(f'Path "{file.resolve()}" not found under "{pp.project.parent_dir}"',
                                  param_hint=['file'])
@@ -97,11 +100,7 @@ def cmd_track(file: Path):
     if pp.child_path.exists():
         raise click.BadParameter(f'Destination path "{pp.child_path}" already exists', param_hint=['file'])
 
-    # move the file over to the child dir
-    pp.parent_path.replace(pp.child_path)
-
-    # symlink the file back to its original location
-    pp.parent_path.symlink_to(pp.child_path)
+    pp.link()
 
     # commit the new file
     child_repo = pp.project.child_repo
@@ -118,12 +117,7 @@ def cmd_untrack(file):
     if not pp.is_linked:
         raise click.BadParameter('File is not linked', param_hint=['file'])
 
-    # This should always be a symlink, so no need to handle this being a dir instead
-    # remove the symlink
-    pp.parent_path.unlink()
-
-    # move the file back to its original location
-    pp.child_path.replace(pp.parent_path)
+    pp.unlink()
 
     child_repo = pp.project.child_repo
     child_repo.index.remove([str(pp.relative_path)])
