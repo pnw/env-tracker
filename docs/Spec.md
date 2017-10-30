@@ -56,3 +56,7 @@ Follower directory structure
 
 Hmm... You don't even need the parent directory to be under parent control technically
 If you're not under parent control, it's essentially a symlinking tool
+
+TODO: http://pre-commit.com/
+Use a pre commit hook to do... something. Maybe check for changes and flag changes to the tracked files.
+Maybe we can hook branch checkouts and changes and automatically commit changes to the tracked files or something.

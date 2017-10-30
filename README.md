@@ -1,15 +1,13 @@
-TODO: http://pre-commit.com/
-Use a pre commit hook to do... something. Maybe check for changes and flag changes to the tracked files.
-Maybe we can hook branch checkouts and changes and automatically commit changes to the tracked files or something.
-
 # env-tracker
+
+## WORK IN PROGRESS
 
 Track untracked files in your project
 A meta git repo to track changes to untracked files in your projects
 
-## Etymology
+## Motivation
 
-ET is short for Env Tracker. The name originally comes from a desire to 
+The `et` command stands for "Env Tracker". The name originally comes from a desire to 
 track changes to .env files that aren't checked into source control.
 I periodically found myself in situations where I made a change to
 a .env file that only to find that I needed to revert that change.
