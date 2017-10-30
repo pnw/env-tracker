@@ -5,7 +5,7 @@ from git import Repo, Git
 from git.exc import InvalidGitRepositoryError
 
 from config import ET_HOME, PARENT_SYMLINK_NAME
-from utils import ProjectPair, find_child_dir, File
+from utils import PairedProject, find_child_dir, PairedPath
 
 
 @click.group()
@@ -88,26 +88,26 @@ def cmd_track(file: Path):
     if file.is_symlink():
         raise click.BadParameter(f'Path "{file}" is already a symlink', param_hint=['file'])
 
-    f_pair = File.from_path(file)
-    if not f_pair.working_from_parent:
-        raise click.BadParameter(f'Path "{file.resolve()}" not found under "{f_pair.project.parent_dir}"', param_hint=['file'])
+    pp = PairedPath.from_path(file)
+    if not pp.working_from_parent:
+        raise click.BadParameter(f'Path "{file.resolve()}" not found under "{pp.project.parent_dir}"', param_hint=['file'])
 
-    if f_pair.child_path.exists():
-        raise click.BadParameter(f'Destination path "{f_pair.child_path}" already exists', param_hint=['file'])
+    if pp.child_path.exists():
+        raise click.BadParameter(f'Destination path "{pp.child_path}" already exists', param_hint=['file'])
 
     # move the file over to the child dir
-    f_pair.parent_path.replace(f_pair.child_path)
+    pp.parent_path.replace(pp.child_path)
 
     # symlink the file back to its original location
-    f_pair.parent_path.symlink_to(f_pair.child_path)
+    pp.parent_path.symlink_to(pp.child_path)
 
     # commit the new file
-    child_repo = f_pair.project.child_repo
-    child_repo.index.add([str(f_pair.relative_path)])
+    child_repo = pp.project.child_repo
+    child_repo.index.add([str(pp.relative_path)])
     import ipdb; ipdb.set_trace()
-    child_repo.index.commit(f'Initialize tracking for "{f_pair.relative_path}"')
+    child_repo.index.commit(f'Initialize tracking for "{pp.relative_path}"')
 
 
-@et.command()
+@et.command('untrack', short_help='Stop tracking a file or directory')
 def untrack():
     click.echo('Running untrack command')

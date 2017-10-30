@@ -6,7 +6,7 @@ from config import PARENT_SYMLINK_NAME, ET_HOME
 from exceptions import InETHome, NotInProject, MissingChild
 
 
-class ProjectPair(object):
+class PairedProject(object):
     """
     Represents a pair of repositories that are linked together
     """
@@ -49,14 +49,13 @@ class ProjectPair(object):
         return Repo(str(self.child_dir))
 
 
-class File(object):
+class PairedPath(object):
     """
-    Represents a file or directory that exists in the linked project pair.
-    The "File" moniker is for lack of a better name, since this can
-     represent a file, directory, symlink, or any of the two
+    Represents a Path that exists under one or both of the
+    projects in a project pair.
     """
 
-    def __init__(self, project: ProjectPair, original_path: Path):
+    def __init__(self, project: PairedProject, original_path: Path):
         self.project = project
         self.original_path = original_path.resolve()
         self.relative_path = get_relative_path(project, self.original_path)
@@ -66,7 +65,7 @@ class File(object):
         """
         Constructor method that creates a ProjectPair instance from the path too.
         """
-        return cls(ProjectPair.from_path(input_path), original_path=input_path)
+        return cls(PairedProject.from_path(input_path), original_path=input_path)
 
     @property
     def working_from_parent(self):
@@ -84,7 +83,7 @@ class File(object):
         return self.project.parent_dir / self.relative_path
 
 
-def get_relative_path(project: ProjectPair, input_path: Path) -> Path:
+def get_relative_path(project: PairedProject, input_path: Path) -> Path:
     """
     Finds the relative path for a path under either of the project dirs
     """
@@ -124,7 +123,7 @@ def path_in_et_home(path: Path) -> bool:
 
 
 # deprecated
-def init_project_from_path(pth: Path) -> ProjectPair:
+def init_project_from_path(pth: Path) -> PairedProject:
     try:
         repo = Repo(pth, search_parent_directories=True)
     except InvalidGitRepositoryError:
@@ -134,4 +133,4 @@ def init_project_from_path(pth: Path) -> ProjectPair:
 
     child_dir = find_child_dir(working_repo_dir)
 
-    return ProjectPair(working_repo_dir, child_dir)
+    return PairedProject(working_repo_dir, child_dir)
