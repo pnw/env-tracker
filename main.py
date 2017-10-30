@@ -129,7 +129,7 @@ def cmd_unlink(file):
 @et.command('status', short_help='`git status` on the linked repository')
 def cmd_status():
     proj = PairedProject.from_path(Path('.'))
-    g = proj.child_raw_git
+    g = proj.child_repo.git
     click.echo(click.style(f'Showing git status for "{proj.child_dir}"', fg='red'))
     click.echo()
     click.echo(g.status())
