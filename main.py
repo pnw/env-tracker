@@ -110,10 +110,10 @@ def cmd_link(file: Path):
     child_repo.index.commit(f'Initialize tracking for "{pp.relative_path}"')
 
 
-@et.command('untrack', short_help='Stop tracking a file or directory')
+@et.command('unlink', short_help='Stop tracking a file or directory')
 @click.argument('file', type=PathType(exists=True, file_okay=True, dir_okay=True, allow_dash=False, writable=True,
                                       readable=True, resolve_path=False))
-def cmd_untrack(file):
+def cmd_unlink(file):
     pp = PairedPath.from_path(file)
 
     if not pp.is_linked:
@@ -134,6 +134,7 @@ def cmd_status():
     click.echo()
     click.echo(g.status())
 
+
 @et.command('other', short_help='Output the linked repository directory')
 def cmd_cd():
     """
@@ -152,4 +153,4 @@ def cmd_cd():
 
     other_dir = proj.child_dir if proj.working_from_parent else proj.parent_dir
 
-    click.echo(other_dir, nl=False)
+    click.echo(other_dir)
