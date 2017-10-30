@@ -82,6 +82,16 @@ class PairedPath(object):
     def parent_path(self) -> Path:
         return self.project.parent_dir / self.relative_path
 
+    @property
+    def is_linked(self):
+        """
+        True if the path matches the pattern for a tracked file.
+        """
+        # import ipdb; ipdb.set_trace()
+        return self.parent_path.is_symlink() \
+               and (not self.child_path.is_symlink()) \
+               and self.child_path == self.parent_path.resolve()
+
 
 def get_relative_path(project: PairedProject, input_path: Path) -> Path:
     """

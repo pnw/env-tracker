@@ -104,10 +104,26 @@ def cmd_track(file: Path):
     # commit the new file
     child_repo = pp.project.child_repo
     child_repo.index.add([str(pp.relative_path)])
-    import ipdb; ipdb.set_trace()
     child_repo.index.commit(f'Initialize tracking for "{pp.relative_path}"')
 
 
 @et.command('untrack', short_help='Stop tracking a file or directory')
-def untrack():
-    click.echo('Running untrack command')
+@click.argument('file', type=PathType(exists=True, file_okay=True, dir_okay=True, allow_dash=False, writable=True,
+                                      readable=True, resolve_path=False))
+def untrack(file):
+    pp = PairedPath.from_path(file)
+
+    if not pp.is_linked:
+        raise click.BadParameter('File is not linked', param_hint=['file'])
+
+    # This should always be a symlink, so no need to handle this being a dir instead
+    # remove the symlink
+    pp.parent_path.unlink()
+
+    # move the file back to its original location
+    pp.child_path.replace(pp.parent_path)
+
+    child_repo = pp.project.child_repo
+    child_repo.index.remove([str(pp.relative_path)])
+    child_repo.index.commit(f'Stop tracking for "{pp.relative_path}"')
+
