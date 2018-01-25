@@ -37,7 +37,7 @@
 
 # Version 2 - Env Tracker meta commands
 - Convert commands to use a proper python command line tool
-- `current` Display information about the current project
+- `info` Display information about the current project
 - `list` List all of the projects being tracked
     - Or should it list all of the tracked files???
 - `rmproject` untracks all tracked files and removes the tracked directory
@@ -55,7 +55,8 @@ Follower directory structure
 
 
 Hmm... You don't even need the parent directory to be under parent control technically
-If you're not under parent control, it's essentially a symlinking tool
+If parent dir is not under source control, it's essentially a symlinking tool, 
+    but finding the project root dir to identify relative paths is a bit more complicated I guess.
 
 TODO: http://pre-commit.com/
 Use a pre commit hook to do... something. Maybe check for changes and flag changes to the tracked files.

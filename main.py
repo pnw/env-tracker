@@ -113,8 +113,8 @@ def cmd_link(file: Path):
 def cmd_unlink(file: Path):
     """
     Unlinks a tracked file by reverting the changes made by the `link` command
-    :param file:
-    :return:
+
+    TODO: add an `--all` option to unlink all objects
     """
     ## Validate parameters and set defaults
     obj_pair = PairedObject.from_path(file)
