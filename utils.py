@@ -3,7 +3,7 @@ from pathlib import Path
 import click
 from git import Repo, InvalidGitRepositoryError, Git
 
-from config import PARENT_SYMLINK_NAME, ET_HOME
+from config import config
 from exceptions import MissingChild
 
 
@@ -35,9 +35,9 @@ class PairedProject(object):
 
         working_repo = Path(repo.working_dir)
 
-        if ET_HOME in working_repo.parents:
+        if config.ET_HOME in working_repo.parents:
             # We are in a child directory
-            parent_dir = (working_repo / PARENT_SYMLINK_NAME).resolve()
+            parent_dir = (working_repo / config.PARENT_SYMLINK_NAME).resolve()
             return cls(parent_dir=parent_dir, child_dir=working_repo, working_from_parent=False)
         else:
             # We are in a parent directory
@@ -150,8 +150,8 @@ def find_child_dir(parent_dir: Path) -> Path:
     Browse the ET_HOME directory to find the directory
      that symlinks to the parent dir
     """
-    for child_dir in ET_HOME.iterdir():
-        parent_path = (child_dir / PARENT_SYMLINK_NAME).resolve()
+    for child_dir in config.ET_HOME.iterdir():
+        parent_path = (child_dir / config.PARENT_SYMLINK_NAME).resolve()
         if parent_dir == parent_path:
             return child_dir
 

@@ -4,7 +4,7 @@ import click
 from git import Repo
 from git.exc import InvalidGitRepositoryError
 
-from config import ET_HOME, PARENT_SYMLINK_NAME
+from config import config
 from utils import PairedObject, PairedProject, get_current_project, PathType
 
 
@@ -36,15 +36,15 @@ def cmd_init(directory: Path, name: str):
             # Check if the directory is a subdir of a git repo and suggest that
             repo = Repo(directory, search_parent_directories=True)
         except InvalidGitRepositoryError:
-            raise click.BadParameter(f'Did you mean this?\n\n\t{repo.working_dir}', param_hint=['directory'])
-        else:
             raise click.BadParameter('Not a git repository.', param_hint=['directory'])
+        else:
+            raise click.BadParameter(f'Did you mean this?\n\n\t{repo.working_dir}', param_hint=['directory'])
 
     parent_path = Path(repo.working_dir)
     if not name:
         name = parent_path.name
-    child_path: Path = Path(ET_HOME) / name
-    to_parent_symlink: Path = child_path / PARENT_SYMLINK_NAME
+    child_path: Path = Path(config.ET_HOME) / name
+    to_parent_symlink: Path = child_path / config.PARENT_SYMLINK_NAME
 
     ## Attempt to create the child directory
     try:
@@ -61,7 +61,7 @@ def cmd_init(directory: Path, name: str):
     repo = Repo.init(child_path)
     to_parent_symlink.symlink_to(parent_path)
 
-    repo.index.add([PARENT_SYMLINK_NAME])
+    repo.index.add([config.PARENT_SYMLINK_NAME])
     repo.index.commit('Link project to parent directory')
 
     click.echo(f'Installed new project "{name}", linking "{child_path}" -> "{parent_path}"')
