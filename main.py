@@ -24,22 +24,29 @@ def et(ctx: click.core.Context, verbose: bool):
 @click.argument('directory', default='.',
                 type=PathType(exists=True, file_okay=False, dir_okay=True, resolve_path=True, allow_dash=False))
 @click.option('-n', '--name', type=click.STRING)
-@click.pass_context
-def cmd_init(ctx: click.core.Context, directory: Path, name: str):
+def cmd_init(directory: Path, name: str):
     """
     Create an empty Git repository that points to an existing repository
     """
+    ## Validate parameters and set defaults
     try:
-        repo = Repo(directory, search_parent_directories=True)
+        repo = Repo(directory, search_parent_directories=False)
     except InvalidGitRepositoryError:
-        raise click.BadParameter('Not a git repository (or any of the parent directories)', param_hint=['directory'])
+        try:
+            # Check if the directory is a subdir of a git repo and suggest that
+            repo = Repo(directory, search_parent_directories=True)
+        except InvalidGitRepositoryError:
+            raise click.BadParameter(f'Did you mean this?\n\n\t{repo.working_dir}', param_hint=['directory'])
+        else:
+            raise click.BadParameter('Not a git repository.', param_hint=['directory'])
 
     parent_path = Path(repo.working_dir)
     if not name:
         name = parent_path.name
-    child_path = Path(ET_HOME) / name
-    to_parent_symlink = child_path / PARENT_SYMLINK_NAME
+    child_path: Path = Path(ET_HOME) / name
+    to_parent_symlink: Path = child_path / PARENT_SYMLINK_NAME
 
+    ## Attempt to create the child directory
     try:
         child_path.mkdir(parents=True)
     except FileExistsError:
@@ -49,6 +56,8 @@ def cmd_init(ctx: click.core.Context, directory: Path, name: str):
                 param_hint=['name'])
         else:
             raise click.BadParameter(f'Path "{child_path}" already exists', param_hint=['name'])
+
+    ## Initialize the child repo
     repo = Repo.init(child_path)
     to_parent_symlink.symlink_to(parent_path)
 

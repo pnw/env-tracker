@@ -36,9 +36,11 @@ class PairedProject(object):
         working_repo = Path(repo.working_dir)
 
         if ET_HOME in working_repo.parents:
+            # We are in a child directory
             parent_dir = (working_repo / PARENT_SYMLINK_NAME).resolve()
             return cls(parent_dir=parent_dir, child_dir=working_repo, working_from_parent=False)
         else:
+            # We are in a parent directory
             child_dir = find_child_dir(working_repo)
             return cls(parent_dir=working_repo, child_dir=child_dir, working_from_parent=True)
 
@@ -53,7 +55,7 @@ class PairedProject(object):
 
 class PairedPath(object):
     """
-    Represents a Path that exists under one or both of the
+    Represents a Path (file, directory, etc) that exists under one or both of the
     projects in a project pair.
     """
 
@@ -63,14 +65,14 @@ class PairedPath(object):
         self.relative_path = get_relative_path(project, self.original_path)
 
     @classmethod
-    def from_path(cls, input_path: Path):
+    def from_path(cls, input_path: Path) -> 'PairedPath':
         """
         Constructor method that creates a ProjectPair instance from the path too.
         """
         return cls(PairedProject.from_path(input_path), original_path=input_path)
 
     @property
-    def working_from_parent(self):
+    def working_from_parent(self) -> bool:
         """
         :return: Whether not the original referenced file is in the parent dir
         """
@@ -85,7 +87,7 @@ class PairedPath(object):
         return self.project.parent_dir / self.relative_path
 
     @property
-    def is_linked(self):
+    def is_linked(self) -> bool:
         """
         True if the path matches the pattern for a tracked file.
         """
@@ -113,6 +115,11 @@ class PairedPath(object):
 def get_relative_path(project: PairedProject, input_path: Path) -> Path:
     """
     Finds the relative path for a path under either of the project dirs
+
+    :param project: A PairedProject instance
+    :param input_path: A path that should be under one of the projects two directories.
+    :raises ValueError: if input_path is not found under one of the project directories
+    :return:
     """
     abs_path = input_path.absolute()
     try:
@@ -132,7 +139,7 @@ def get_relative_path(project: PairedProject, input_path: Path) -> Path:
 def find_child_dir(parent_dir: Path) -> Path:
     """
     Browse the ET_HOME directory to find the directory
-     that tracks the parent dir
+     that symlinks to the parent dir
     """
     for child_dir in ET_HOME.iterdir():
         parent_path = (child_dir / PARENT_SYMLINK_NAME).resolve()
@@ -142,6 +149,7 @@ def find_child_dir(parent_dir: Path) -> Path:
     # User needs to run `et init` on the parent directory.
     raise MissingChild('Could not find an associated project '
                        'for the current directory')
+
 
 def get_current_project():
     try:
@@ -156,15 +164,17 @@ class PathType(click.Path):
     """
     Click argument parser for returning filepath locations as Path objects
     """
+
     def convert(self, value, param, ctx):
         return Path(super().convert(value, param, ctx))
 
 
 def file_is_git_tracked(repo: Repo, file: Path) -> bool:
     """
-    :param repo:
+    :param repo: any git Repo instance
     :param file: path must be relative to the repo
     :return: Whether git is tracking the file in question
     """
+    # TODO: is there a more canonical way of doing this?
     # Git knows about this file
     return bool(Git(repo.working_dir).ls_files(file))
