@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import click
-from git import Repo, InvalidGitRepositoryError
+from git import Repo, InvalidGitRepositoryError, Git
 
 from config import PARENT_SYMLINK_NAME, ET_HOME
 from exceptions import MissingChild
@@ -150,3 +150,21 @@ def get_current_project():
         raise click.BadParameter('Not in a git repository')
     except MissingChild as e:
         raise click.BadParameter(e)
+
+
+class PathType(click.Path):
+    """
+    Click argument parser for returning filepath locations as Path objects
+    """
+    def convert(self, value, param, ctx):
+        return Path(super().convert(value, param, ctx))
+
+
+def file_is_git_tracked(repo: Repo, file: Path) -> bool:
+    """
+    :param repo:
+    :param file: path must be relative to the repo
+    :return: Whether git is tracking the file in question
+    """
+    # Git knows about this file
+    return bool(Git(repo.working_dir).ls_files(file))

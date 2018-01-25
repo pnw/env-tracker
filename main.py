@@ -1,24 +1,23 @@
 from pathlib import Path
 
 import click
-from git import Repo, Git
+from git import Repo
 from git.exc import InvalidGitRepositoryError
 
 from config import ET_HOME, PARENT_SYMLINK_NAME
-from utils import PairedPath, PairedProject, get_current_project
+from utils import PairedPath, PairedProject, get_current_project, PathType
 
 
 @click.group()
 @click.option('-v', '--verbose', is_flag=True, help='Enables verbose messaging')
 @click.pass_context
-def et(ctx, verbose):
+def et(ctx: click.core.Context, verbose: bool):
+    """
+    Primary top-level group command.
+    Calling directly with no parameters will display help.
+    """
     ctx.obj = {}
     ctx.obj['verbose'] = verbose
-
-
-class PathType(click.Path):
-    def convert(self, value, param, ctx):
-        return Path(super().convert(value, param, ctx))
 
 
 @et.command('init', short_help='Initialize a new Env Tracker repository')
@@ -57,16 +56,6 @@ def cmd_init(ctx: click.core.Context, directory: Path, name: str):
     repo.index.commit('Link project to parent directory')
 
     click.echo(f'Installed new project "{name}", linking "{child_path}" -> "{parent_path}"')
-
-
-def file_is_git_tracked(repo: Repo, file: Path) -> bool:
-    """
-    :param repo:
-    :param file: path must be relative to the repo
-    :return: Whether git is tracking the file in question
-    """
-    # Git knows about this file
-    return bool(Git(repo.working_dir).ls_files(file))
 
 
 @et.command('link', short_help='Link a file or directory')
