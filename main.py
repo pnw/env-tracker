@@ -110,14 +110,22 @@ def cmd_link(file: Path):
 @et.command('unlink', short_help='Stop tracking a file or directory')
 @click.argument('file', type=PathType(exists=True, file_okay=True, dir_okay=True, allow_dash=False, writable=True,
                                       readable=True, resolve_path=False))
-def cmd_unlink(file):
+def cmd_unlink(file: Path):
+    """
+    Unlinks a tracked file by reverting the changes made by the `link` command
+    :param file:
+    :return:
+    """
+    ## Validate parameters and set defaults
     pp = PairedPath.from_path(file)
 
     if not pp.is_linked:
         raise click.BadParameter('File is not linked', param_hint=['file'])
 
+    ## Unlink files
     pp.unlink()
 
+    ## Commit changes
     child_repo = pp.project.child_repo
     child_repo.index.remove([str(pp.relative_path)])
     child_repo.index.commit(f'Stop tracking for "{pp.relative_path}"')

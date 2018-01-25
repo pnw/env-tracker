@@ -89,26 +89,33 @@ class PairedPath(object):
     @property
     def is_linked(self) -> bool:
         """
-        True if the path matches the pattern for a tracked file.
+        A path is considered linked if the path
+        meets the following qualifications:
+
+            - child path exists
+            - child path is not a symlink
+            - parent path exists
+            - parent path is a symlink to the child
         """
-        # import ipdb; ipdb.set_trace()
         return self.parent_path.is_symlink() \
                and (not self.child_path.is_symlink()) \
                and self.child_path.samefile(self.parent_path)
 
     def link(self):
-        # move the file over to the child dir
+        """
+        1. Moves the file/directory from the parent dir into
+        the same relative location in the child dir.
+        2. Symlink the file/directory back to its original location
+        """
         self.parent_path.replace(self.child_path)
-
-        # symlink the file back to its original location
         self.parent_path.symlink_to(self.child_path)
 
     def unlink(self):
-        # This should always be a symlink, so no need to handle this being a dir instead
-        # remove the symlink
+        """
+        Completely reverts changes made by PairedPath.link.
+        """
+        # No special case needed for file vs dir types, since this is always a symlink
         self.parent_path.unlink()
-
-        # move the file back to its original location
         self.child_path.replace(self.parent_path)
 
 
