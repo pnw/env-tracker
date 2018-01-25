@@ -1,5 +1,5 @@
-import logging
+import logging as _logging
 
-logging.basicConfig(format='%(levelname)-7s [%(module)s:%(filename)s:%(lineno)s] %(message)s')
-log = logging.getLogger('et')
-log.setLevel(logging.DEBUG)
+_logging.basicConfig(format='%(levelname)-7s [%(module)s:%(filename)s:%(lineno)s] %(message)s')
+log = _logging.getLogger('et')
+log.setLevel(_logging.DEBUG)
