@@ -22,7 +22,7 @@ class PairedProject(object):
         self.working_from_parent = working_from_parent
 
     @classmethod
-    def from_path(cls, input_path: Path):
+    def from_path(cls, input_path: Path) -> 'PairedProject':
         """
         Identify a ProjectPair given a path.
         An error will be raised if the input_path is not in a valid
@@ -53,23 +53,25 @@ class PairedProject(object):
         return Repo(str(self.child_dir))
 
 
-class PairedPath(object):
+class PairedObject(object):
     """
-    Represents a Path (file, directory, etc) that exists under one or both of the
-    projects in a project pair.
+    Represents a filesystem object (file, directory, other?)
+    whose path is under a ProjectPair.
     """
 
-    def __init__(self, project: PairedProject, original_path: Path):
+    def __init__(self, project: PairedProject, relative_path: Path):
         self.project = project
-        self.original_path = original_path.absolute()
-        self.relative_path = get_relative_path(project, self.original_path)
+        self.relative_path = relative_path
 
     @classmethod
-    def from_path(cls, input_path: Path) -> 'PairedPath':
+    def from_path(cls, input_path: Path) -> 'PairedObject':
         """
         Constructor method that creates a ProjectPair instance from the path too.
         """
-        return cls(PairedProject.from_path(input_path), original_path=input_path)
+        project = PairedProject.from_path(input_path)
+        relative_path = get_relative_path(project, input_path.absolute())
+
+        return cls(project, relative_path=relative_path)
 
     @property
     def working_from_parent(self) -> bool:
@@ -176,6 +178,7 @@ class PathType(click.Path):
         return Path(super().convert(value, param, ctx))
 
 
+# TODO: I forget what I was going to use this for... should this be a method on PairedObject?
 def file_is_git_tracked(repo: Repo, file: Path) -> bool:
     """
     :param repo: any git Repo instance

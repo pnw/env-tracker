@@ -5,7 +5,7 @@ from git import Repo
 from git.exc import InvalidGitRepositoryError
 
 from config import ET_HOME, PARENT_SYMLINK_NAME
-from utils import PairedPath, PairedProject, get_current_project, PathType
+from utils import PairedObject, PairedProject, get_current_project, PathType
 
 
 @click.group()
@@ -85,26 +85,26 @@ def cmd_link(file: Path):
     """
     # We check for symlink here because we resolve the file path to init the project
 
-    pp = PairedPath.from_path(file)
-    if pp.is_linked:
-        raise click.BadParameter(f'Path "{pp.relative_path}" is already linked')
+    obj_pair = PairedObject.from_path(file)
+    if obj_pair.is_linked:
+        raise click.BadParameter(f'Path "{obj_pair.relative_path}" is already linked')
 
-    if pp.parent_path.is_symlink():
+    if obj_pair.parent_path.is_symlink():
         raise click.BadParameter(f'Path "{file}" is already a symlink', param_hint=['file'])
 
-    if not pp.working_from_parent:
-        raise click.BadParameter(f'Path "{file}" not found under "{pp.project.parent_dir}"',
+    if not obj_pair.working_from_parent:
+        raise click.BadParameter(f'Path "{file}" not found under "{obj_pair.project.parent_dir}"',
                                  param_hint=['file'])
 
-    if pp.child_path.exists():
-        raise click.BadParameter(f'Destination path "{pp.child_path}" already exists', param_hint=['file'])
+    if obj_pair.child_path.exists():
+        raise click.BadParameter(f'Destination path "{obj_pair.child_path}" already exists', param_hint=['file'])
 
-    pp.link()
+    obj_pair.link()
 
     # commit the new file
-    child_repo = pp.project.child_repo
-    child_repo.index.add([str(pp.relative_path)])
-    child_repo.index.commit(f'Initialize tracking for "{pp.relative_path}"')
+    child_repo = obj_pair.project.child_repo
+    child_repo.index.add([str(obj_pair.relative_path)])
+    child_repo.index.commit(f'Initialize tracking for "{obj_pair.relative_path}"')
 
 
 @et.command('unlink', short_help='Stop tracking a file or directory')
@@ -117,18 +117,18 @@ def cmd_unlink(file: Path):
     :return:
     """
     ## Validate parameters and set defaults
-    pp = PairedPath.from_path(file)
+    obj_pair = PairedObject.from_path(file)
 
-    if not pp.is_linked:
+    if not obj_pair.is_linked:
         raise click.BadParameter('File is not linked', param_hint=['file'])
 
     ## Unlink files
-    pp.unlink()
+    obj_pair.unlink()
 
     ## Commit changes
-    child_repo = pp.project.child_repo
-    child_repo.index.remove([str(pp.relative_path)])
-    child_repo.index.commit(f'Stop tracking for "{pp.relative_path}"')
+    child_repo = obj_pair.project.child_repo
+    child_repo.index.remove([str(obj_pair.relative_path)])
+    child_repo.index.commit(f'Stop tracking for "{obj_pair.relative_path}"')
 
 
 @et.command('status', short_help='`git status` on the linked repository')
