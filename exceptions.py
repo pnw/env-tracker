@@ -6,5 +6,5 @@ class InETHome(Exception):
 class NotInProject(Exception):
     pass
 
-class MissingChild(Exception):
+class UnknownProject(Exception):
     pass

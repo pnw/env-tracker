@@ -4,6 +4,7 @@ import click
 from git import Repo
 from git.exc import InvalidGitRepositoryError
 
+from logger import logger
 from config import config
 from utils import PairedObject, PairedProject, get_current_project, PathType
 
@@ -28,6 +29,13 @@ def cmd_init(directory: Path, name: str):
     """
     Create an empty Git repository that points to an existing repository
     """
+    try:
+        existing_project = PairedProject.from_path(directory)
+    except Exception:
+        logger.debug('No existing project found - continuing')
+    else:
+        raise click.BadParameter(f'Conflict: specified directory is already linked to {str(existing_project.child_dir)}', param_hint='DIRECTORY')
+
     ## Validate parameters and set defaults
     try:
         repo = Repo(directory, search_parent_directories=False)
@@ -133,7 +141,7 @@ def cmd_unlink(file: Path):
 
 @et.command('status', short_help='`git status` on the linked repository')
 def cmd_status():
-    proj = PairedProject.from_path(Path('.'))
+    proj = get_current_project()
     g = proj.child_repo.git
     click.echo(click.style(f'Showing git status for "{proj.child_dir}"', fg='red'))
     click.echo()

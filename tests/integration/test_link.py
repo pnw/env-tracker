@@ -1,4 +1,4 @@
-from tests.test_utils import BaseTestCase
+from tests.helpers import BaseTestCase
 
 
 class TestLink(BaseTestCase):

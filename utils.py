@@ -4,7 +4,7 @@ import click
 from git import Repo, InvalidGitRepositoryError, Git
 
 from config import config
-from exceptions import MissingChild
+from exceptions import UnknownProject
 
 
 class PairedProject(object):
@@ -156,7 +156,7 @@ def find_child_dir(parent_dir: Path) -> Path:
             return child_dir
 
     # User needs to run `et init` on the parent directory.
-    raise MissingChild('Could not find an associated project '
+    raise UnknownProject('Could not find an associated project '
                        'for the current directory')
 
 
@@ -165,7 +165,7 @@ def get_current_project():
         return PairedProject.from_path(Path('.'))
     except InvalidGitRepositoryError:
         raise click.BadParameter('Not in a git repository')
-    except MissingChild as e:
+    except UnknownProject as e:
         raise click.BadParameter(e)
 
 
