@@ -1,5 +1,3 @@
-import tempfile
-
 import os
 from pathlib import Path
 
@@ -52,9 +50,18 @@ class TestInitCommand(BaseTestCase):
         Aside from just "explicit > implicit", this removes potential for
         complication with git submodules.
         """
-        project_subdir = tempfile.mkdtemp(dir=self.project_dir)
+        project_subdir = self.project_dir.joinpath('some_subdir')
+        project_subdir.mkdir()
 
-        self.fail('Not Implemented')
+        self.assertFalse(project_subdir.joinpath('.git').exists(), 'Expected provided directory to not be a git repo')
+        self.assertTrue(project_subdir.parent.joinpath('.git').exists(),
+                        'Expect provided directory to be the child of a git repo')
+
+        result = self.runner.invoke(cmd_init, [str(project_subdir.absolute())])
+
+        self.assertNotEqual(0, result.exit_code, 'Expected error')
+        self.assertIn('Not a git repository. Did you mean this?', result.output,
+                      'Expecting error output to mention project is not a git repo')
 
     def test_cannot_init_if_child_dir_already_exists(self):
         """
@@ -108,9 +115,9 @@ class TestInitCommand(BaseTestCase):
 
         self.assertEqual(0, result.exit_code, 'Expected no errors')
         self.assertTrue(self.child_dir.is_dir(), 'Child dir should have been created')
-        self.assertTrue(self.child_dir.joinpath(config.PARENT_SYMLINK_NAME).samefile(self.project_dir), 'Child dir should link to project dir')
+        self.assertTrue(self.child_dir.joinpath(config.PARENT_SYMLINK_NAME).samefile(self.project_dir),
+                        'Child dir should link to project dir')
         self.assertTrue(self.child_dir.joinpath('.git').is_dir(), 'Child dir should be a git repo')
-
 
     def test_can_provide_absolute_directory(self):
         """
@@ -130,7 +137,8 @@ class TestInitCommand(BaseTestCase):
 
         self.assertEqual(0, result.exit_code, 'Expected no errors')
         self.assertTrue(self.child_dir.is_dir(), 'Child dir should have been created')
-        self.assertTrue(self.child_dir.joinpath(config.PARENT_SYMLINK_NAME).samefile(self.project_dir), 'Child dir should link to project dir')
+        self.assertTrue(self.child_dir.joinpath(config.PARENT_SYMLINK_NAME).samefile(self.project_dir),
+                        'Child dir should link to project dir')
         self.assertTrue(self.child_dir.joinpath('.git').is_dir(), 'Child dir should be a git repo')
 
     #

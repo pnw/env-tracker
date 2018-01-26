@@ -34,7 +34,9 @@ def cmd_init(directory: Path, name: str):
     except Exception:
         logger.debug('No existing project found - continuing')
     else:
-        raise click.BadParameter(f'Conflict: specified directory is already linked to {str(existing_project.child_dir)}', param_hint='DIRECTORY')
+        raise click.BadParameter(
+            f'Conflict: specified directory is already linked to {str(existing_project.child_dir)}',
+            param_hint='DIRECTORY')
 
     ## Validate parameters and set defaults
     try:
@@ -46,7 +48,8 @@ def cmd_init(directory: Path, name: str):
         except InvalidGitRepositoryError:
             raise click.BadParameter('Not a git repository.', param_hint=['directory'])
         else:
-            raise click.BadParameter(f'Did you mean this?\n\n\t{repo.working_dir}', param_hint=['directory'])
+            raise click.BadParameter(f'Not a git repository. Did you mean this?\n\n\t{repo.working_dir}',
+                                     param_hint=['directory'])
 
     parent_path = Path(repo.working_dir)
     if not name:
