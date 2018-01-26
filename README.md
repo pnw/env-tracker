@@ -54,15 +54,15 @@ git init
 
 cd path/to/my-project
 
-# Create a secret file that you don't want to include in 
+# Create a secret file with some secret passwords that you don't want github to see
 touch secret-file.txt
-echo "secret password" > secret-file.txt
+echo "env tracker is awesome" > secret-file.txt
 echo "secret-file.txt" >> .gitignore
 
-# move your secret file to the second repository
+# Move your secret file to the second repository
 mv secret-file.txt ~/.et/my-project/
 
-# create a symlink in the files original location which points to the file
+# Create a symlink in the files original location which points to the file in its new home
 ln -s ~/.et/my-project/secret-file.txt secret-file.txt
 ```  
 
