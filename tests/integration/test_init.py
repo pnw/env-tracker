@@ -141,19 +141,38 @@ class TestInitCommand(BaseTestCase):
                         'Child dir should link to project dir')
         self.assertTrue(self.child_dir.joinpath('.git').is_dir(), 'Child dir should be a git repo')
 
-    #
-    # def test_can_specify_a_name(self):
-    #     """
-    #     A user may specify a custom directory name to be created in ET_HOME.
-    #
-    #     As of writing,
-    #     """
-    #     self.fail('Not Implemented')
-    #
-    # def test_cannot_specify_a_name_with_path_delimiter(self):
-    #     """
-    #     A user may not specify a name with a path delimiter (e.g. / )
-    #     because all tracked repos must be in the top level of
-    #     ET_HOME for discovery
-    #     """
-    #     self.fail('Not Implemented')
+
+    def test_can_specify_a_name(self):
+        """
+        A user may specify a custom directory name to be created in ET_HOME.
+        """
+
+        new_name = 'this-is-different'
+        new_child_dir = self.ET_HOME.joinpath(new_name)
+        self.assertFalse(new_child_dir.exists())
+
+        result = self.runner.invoke(cmd_init, ['-n', new_name])
+
+        self.assertEqual(0, result.exit_code, 'Expected no errors')
+        self.assertTrue(new_child_dir.is_dir(), 'Expected the specified name to be used')
+        self.assertTrue(new_child_dir.joinpath('.git').is_dir(), 'Expected the new child dir to be a git repo')
+        self.assertTrue(new_child_dir.joinpath(config.PARENT_SYMLINK_NAME).samefile(self.project_dir),
+                        'Expected the new child dir to point back to project')
+        self.assertFalse(self.child_dir.is_dir(), 'Expected the default name to not be used')
+
+    def test_cannot_specify_a_name_with_path_delimiter(self):
+        """
+        A user may not specify a name with a path delimiter (e.g. / )
+        because all tracked repos must be in the top level of
+        ET_HOME for discovery
+        """
+        # Test this using pathlib to join the path names to hopefully
+        # allow this test to work on windows too... maybe?
+        new_name_path = Path('new_child').joinpath('and_whatever')
+        self.assertEqual(new_name_path.as_posix(), 'new_child/and_whatever')
+
+        # hopefully that converts to the correct delimiter on windows
+        result = self.runner.invoke(cmd_init, ['-n', str(new_name_path)])
+
+        self.assertNotEqual(0, result.exit_code, 'Expected command to fail validation')
+        self.assertIn('Must not contain path delimiter', result.output)

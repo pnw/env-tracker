@@ -52,7 +52,11 @@ def cmd_init(directory: Path, name: str):
                                      param_hint=['directory'])
 
     parent_path = Path(repo.working_dir)
-    if not name:
+    if name:
+        # names must not contain OS path delimiters
+        if Path(name).name != name:
+            raise click.BadParameter('Must not contain path delimiter, e.g. "/" or "\\"', param_hint=['name'])
+    else:
         name = parent_path.name
     child_path: Path = Path(config.ET_HOME) / name
     to_parent_symlink: Path = child_path / config.PARENT_SYMLINK_NAME
