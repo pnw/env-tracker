@@ -87,15 +87,52 @@ class TestInitCommand(BaseTestCase):
         result = self.runner.invoke(cmd_init, [])
 
         self.assertNotEqual(0, result.exit_code, 'Expected error exit code')
-        print(result.output)
         self.assertIn('Conflict: specified directory is already linked to', result.output)
 
-    # def test_can_init_outside_of_cwd(self):
-    #     """
-    #     By default, project pairs are initialized in the cwd.
-    #     A user may specify a different path to initialize.
-    #     """
-    #     self.fail('Not Implemented')
+    def test_can_provide_relative_directory(self):
+        """
+        By default, project pairs are initialized in the cwd.
+        A user may specify a different path to initialize.
+        The provided directory may be a relative path to the cwd.
+        """
+        cwd = self.test_dir
+        os.chdir(cwd)
+
+        self.assertFalse(Path().absolute().samefile(self.project_dir), 'CWD should not be in the project_dir')
+        self.assertFalse(self.child_dir.exists(), 'Child dir shouldn\'t exist')
+
+        directory_param = self.project_dir.absolute().relative_to(Path(cwd).absolute())
+        self.assertFalse(directory_param.is_absolute(), 'directory_param should be a relative path')
+
+        result = self.runner.invoke(cmd_init, [str(directory_param)])
+
+        self.assertEqual(0, result.exit_code, 'Expected no errors')
+        self.assertTrue(self.child_dir.is_dir(), 'Child dir should have been created')
+        self.assertTrue(self.child_dir.joinpath(config.PARENT_SYMLINK_NAME).samefile(self.project_dir), 'Child dir should link to project dir')
+        self.assertTrue(self.child_dir.joinpath('.git').is_dir(), 'Child dir should be a git repo')
+
+
+    def test_can_provide_absolute_directory(self):
+        """
+        By default, project pairs are initialized in the cwd.
+        A user may specify a different path to initialize.
+        The provided directory may be an absolute path.
+        """
+        os.chdir(self.test_dir)
+
+        self.assertFalse(Path().absolute().samefile(self.project_dir), 'CWD should not be in the project_dir')
+        self.assertFalse(self.child_dir.exists(), 'Child dir shouldn\'t exist')
+
+        directory_param = self.project_dir
+        self.assertTrue(directory_param.is_absolute(), 'project_dir should be an absolute path')
+
+        result = self.runner.invoke(cmd_init, [str(directory_param)])
+
+        self.assertEqual(0, result.exit_code, 'Expected no errors')
+        self.assertTrue(self.child_dir.is_dir(), 'Child dir should have been created')
+        self.assertTrue(self.child_dir.joinpath(config.PARENT_SYMLINK_NAME).samefile(self.project_dir), 'Child dir should link to project dir')
+        self.assertTrue(self.child_dir.joinpath('.git').is_dir(), 'Child dir should be a git repo')
+
     #
     # def test_can_specify_a_name(self):
     #     """
