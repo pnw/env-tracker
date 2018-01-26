@@ -36,7 +36,7 @@ Env Tracker aims to change that by being a simple tool that lets you use source 
 
 ## How does it work?
 
-Env Tracker works by 
+Most basically, Env Tracker works something like this:
 
 - Create a git repository outside of your project repository
 - Any .gitignore'd files you wish you could keep source-controlled are moved to the second repository where they can reap the benefits of source control.
